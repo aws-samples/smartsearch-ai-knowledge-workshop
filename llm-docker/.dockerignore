@@ -1,0 +1,5 @@
+.ipynb_checkpoints
+__pycache__
+.venv
+.venv_test
+#chatglm-6b
