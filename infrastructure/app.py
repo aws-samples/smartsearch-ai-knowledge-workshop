@@ -9,7 +9,7 @@ from aws_cdk import (
     App, CfnOutput, Stack
 )
 
-from .knowledge_vectordb_infra import KnowledgeVectorDbInfra
+from lib.knowledge_vectordb_infra import KnowledgeVectorDbInfra
 
 
 class LLMStreamingStack(Stack):

@@ -19,7 +19,7 @@ class KnowledgeVectorDbInfra(Construct):
   """
 
   @property
-  def domain_endpoint_name(self):
+  def domain_endpoint(self):
     return self._open_search_service.domain_endpoint
 
   @property
@@ -37,8 +37,8 @@ class KnowledgeVectorDbInfra(Construct):
     cdk.CfnOutput(self, f"OpenSearchDomainEndpoint",
                   value=self._open_search_service.domain_endpoint)
 
-    cdk.CfnOutput(self, 'OPSHostEndpoint', value=self.search_domain_endpoint, export_name='OPSHostEndpoint')
-    cdk.CfnOutput(self, 'OPSDashboardURL', value=f"{self.search_domain_endpoint}/_dashboards/", export_name='OPSDashboardURL')
+    cdk.CfnOutput(self, 'OPSHostEndpoint', value=self.domain_endpoint, export_name='OPSHostEndpoint')
+    cdk.CfnOutput(self, 'OPSDashboardURL', value=f"{self.domain_endpoint}/_dashboards/", export_name='OPSDashboardURL')
 
   def _create_secret(self):
     """
@@ -52,7 +52,7 @@ class KnowledgeVectorDbInfra(Construct):
                                              # one lowercase letter, one number, and one special character.
                                              password_length=12
                                             ),
-                                         secret_name="opensearch-master-user"
+                                         secret_name="OSMasterUserSecret"
                                      )
     return master_user_secret
   def _create_open_search_domain(self):
@@ -72,7 +72,7 @@ class KnowledgeVectorDbInfra(Construct):
                                         "data_node_instance_type": "t3.small.search"
                                     },
                                     ebs={
-                                        "volume_size": 5,
+                                        "volume_size": 10,
                                         "volume_type": ec2.EbsDeviceVolumeType.GP3
                                     },
                                     fine_grained_access_control=opensearch.AdvancedSecurityOptions(
@@ -88,7 +88,6 @@ class KnowledgeVectorDbInfra(Construct):
                                     removal_policy=cdk.RemovalPolicy.DESTROY,
                                    )
 
-    cdk.Tags.of(ops_domain).add('Name', 'smartsearch-ops')
-
-    self.search_domain_endpoint = ops_domain.domain_endpoint
+    self.search_domain = ops_domain.domain_endpoint
     self.search_domain_arn = ops_domain.domain_arn
+    return ops_domain
