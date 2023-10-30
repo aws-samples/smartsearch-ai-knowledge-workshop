@@ -30,7 +30,7 @@ class KnowledgeVectorDbInfra(Construct):
                scope: Construct,
                id: str,
                **kwargs):
-    super().__init__(scope, id, **kwargs)
+    super().__init__(scope, id)
 
     self._open_search_service = self._create_open_search_domain()
 

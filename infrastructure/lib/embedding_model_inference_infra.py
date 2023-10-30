@@ -8,7 +8,6 @@ except ImportError:
 
 from aws_cdk import (
     aws_iam as iam,
-    aws_kms as kms,
     aws_s3 as s3,
     aws_s3_deployment as s3_deployment,
     aws_cloudwatch as cloudwatch,
@@ -16,13 +15,13 @@ from aws_cdk import (
     aws_applicationautoscaling as asg,
 )
 
-from .envconfig import EnvConfig
+from .config import PYTORCH_VERSION, TRANSFORMERS_VERSION, PY_VERSION, REGION_DICT
 
 
-class SageMakerInfra(Construct):
-    @property
-    def bucket_name(self):
-        return self._bucket_name
+class EmbeddingModelInferenceInfra(Construct):
+    # @property
+    # def bucket_name(self):
+    #     return self._bucket_name
 
     @property
     def endpoint_name(self):
@@ -32,22 +31,26 @@ class SageMakerInfra(Construct):
     def endpoint_ref(self):
         return self._endpoint_ref
 
-    def __init__(self, scope: Construct, id: str, env_config: EnvConfig, **kwargs):
+    def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id)
 
-        self._env = env_config
+        self._deploy_partition = "aws"
+        self._region = os.environ.get("CDK_DEPLOY_REGION", os.environ["CDK_DEFAULT_REGION"])
+        self._instance_type = kwargs['instance_type']
+        self._project_name = kwargs['project_name']
+        if self._region.startswith("cn"):
+            self._deploy_partition = "aws-cn"
 
-        self._deploy_partition = self._env.deploy_partition
-        self._local_model_path = self._get_local_model_path()
+        # self._local_model_path = self._get_local_model_path()
 
-        self._data_bucket = self._create_data_bucket()
-        self._sagemaker_role = self._create_sagemaker_role(self._data_bucket)
+        # self._data_bucket = self._create_data_bucket()
+        self._sagemaker_role = self._create_sagemaker_role()
 
-        self._model_deployment, s3_model_file_url = self._create_model_deployment()
+        # self._model_deployment, s3_model_file_url = self._create_model_deployment()
 
-        endpoint = self._create_endpoint(s3_model_file_url, self._sagemaker_role)
+        endpoint = self._create_endpoint(None, self._sagemaker_role)
 
-        self._bucket_name = self._data_bucket.bucket_name
+        # self._bucket_name = self._data_bucket.bucket_name
         self._endpoint_name = endpoint.attr_endpoint_name
         self._endpoint_ref = endpoint.ref
 
@@ -59,11 +62,16 @@ class SageMakerInfra(Construct):
             os.path.dirname(os.path.dirname(__file__)), os.pardir, 'models')
 
     def _create_endpoint(self, s3_model_file_url, sagemaker_role):
-        prefix = f"{self._env.project_name}Endpoint"
-        instance_type = self._env.sagemaker_endpoint_instance_type
-        instance_count = self._env.sagemaker_endpoint_instance_count
+        prefix = f"{self._project_name}"
+        instance_type = self._instance_type
 
         image_uri = self._get_sagemaker_image_uri()
+
+        # HF_TASK          = "feature-extraction"
+        # HF_MODEL_ID      = "sentence-transformers/msmarco-distilbert-base-v3"
+        # SAGEMAKER_REGION = "us-east-1"
+        # SAGEMAKER_CONTAINER_LOG_LEVEL = 20
+
         # ===========================
         # ===== SAGEMAKER MODEL =====
         # ===========================
@@ -76,24 +84,22 @@ class SageMakerInfra(Construct):
             containers=[
                 sagemaker.CfnModel.ContainerDefinitionProperty(
                     container_hostname=f"{prefix}ContainerHostname",
-                    # image=image_uri,
                     image=image_uri,
                     mode="SingleModel",
-                    model_data_url=s3_model_file_url,
+                    # model_data_url=s3_model_file_url,
                     environment={
-                        "SAGEMAKER_CONTAINER_LOG_LEVEL": self._env.sagemaker_logging_level,
-                        "SAGEMAKER_PROGRAM": "inference.py",
+                        "HF_TASK": "feature-extraction",
+                        "HF_MODEL_ID": "shibing624/text2vec-base-chinese",
+                        "SAGEMAKER_CONTAINER_LOG_LEVEL": 20,
                         "SAGEMAKER_REGION": cdk.Aws.REGION,
-                        "SAGEMAKER_SUBMIT_DIRECTORY": "/opt/ml/model/code",
-                        "SAGEMAKER_TS_BATCH_SIZE": '4',
-                        "SAGEMAKER_TS_MAX_BATCH_DELAY": '100',
-                        "SAGEMAKER_TS_MAX_WORKERS": self._env.sagemaker_endpoint_workers,
-                        "SAGEMAKER_TS_MIN_WORKERS": self._env.sagemaker_endpoint_workers
+                        # "SAGEMAKER_PROGRAM": "inference.py",
+                        # "SAGEMAKER_SUBMIT_DIRECTORY": "/opt/ml/model/code"
                     },
                 )
             ],
         )
-        model.node.add_dependency(self._model_deployment)
+
+        # model.node.add_dependency(self._model_deployment)
 
         # =====================================
         # ===== SAGEMAKER ENDPOINT CONFIG =====
@@ -104,7 +110,7 @@ class SageMakerInfra(Construct):
             f"{prefix}EndpointConfig",
             production_variants=[
                 sagemaker.CfnEndpointConfig.ProductionVariantProperty(
-                    initial_instance_count=instance_count,
+                    initial_instance_count=1,
                     initial_variant_weight=1.0,
                     instance_type=instance_type,
                     model_name=model.attr_model_name,
@@ -134,8 +140,8 @@ class SageMakerInfra(Construct):
             self,
             "ScalableTarget",
             service_namespace=asg.ServiceNamespace.SAGEMAKER,
-            max_capacity=self._env.sagemaker_max_capacity,
-            min_capacity=self._env.sagemaker_min_capacity,
+            max_capacity=2,
+            min_capacity=1,
             resource_id=f"endpoint/{endpoint.attr_endpoint_name}/variant/{variant_name}",
             scalable_dimension="sagemaker:variant:DesiredInstanceCount",
             role=sagemaker_role
@@ -164,7 +170,7 @@ class SageMakerInfra(Construct):
     def _create_data_bucket(self):
         data_bucket = s3.Bucket(
             self,
-            f"{self._env.project_name}ModelData",
+            f"{self._project_name}ModelData",
             removal_policy=cdk.RemovalPolicy.RETAIN,
             object_ownership=s3.ObjectOwnership.OBJECT_WRITER,
             # removal_policy=cdk.RemovalPolicy.DESTROY if self._env.is_dev() else cdk.RemovalPolicy.RETAIN,
@@ -216,7 +222,7 @@ class SageMakerInfra(Construct):
 
         return model_deployment, f"s3://{self._data_bucket.bucket_name}/model/{self._env.sagemaker_inference_model_name}"
 
-    def _create_sagemaker_role(self, s3_bucket):
+    def _create_sagemaker_role(self):
         # IAM Roles
         name = "Sagemaker"
         sagemaker_role = iam.Role(
@@ -239,8 +245,6 @@ class SageMakerInfra(Construct):
                                 "s3:AbortMultipartUpload",
                             ],
                             resources=[
-                                s3_bucket.arn_for_objects("*"),
-                                s3_bucket.bucket_arn,
                                 f"arn:{self._deploy_partition}:s3:::*SageMaker*",
                                 f"arn:{self._deploy_partition}:s3:::*Sagemaker*",
                                 f"arn:{self._deploy_partition}:s3:::*sagemaker*",
@@ -289,7 +293,6 @@ class SageMakerInfra(Construct):
                         iam.PolicyStatement(
                             actions=["s3:ListBucket"],
                             resources=[
-                                s3_bucket.bucket_arn,
                                 f"arn:{self._deploy_partition}:s3:::sagemaker*",
                             ],
                             effect=iam.Effect.ALLOW,
@@ -377,28 +380,17 @@ class SageMakerInfra(Construct):
 
         return sagemaker_role
 
-    #
-    # def get_sagemaker_logging_level(self):
-    #     return self._config.getint(self._stage, "sagemaker_logging_level")
-    #
-    # def get_sagemaker_endpoint_workers(self):
-    #     return self._config.get(self._stage, "sagemaker_endpoint_workers")
-
     def _get_sagemaker_image_uri(self):
-        region = self._env.region
-        use_gpu = self._is_gpu_instance()
-        pytorch_version = self._env.sagemaker_pytorch_version
-        py_version = self._env.sagemaker_py_version
-        region_dict = self._env.region_dict
 
         repository = (
-            f"{region_dict[region]}.dkr.ecr.{region}.amazonaws.com/pytorch-inference"
+            f"{REGION_DICT[self._region]}.dkr.ecr.{self._region}.amazonaws.com/huggingface-pytorch-inference"
         )
-        tag = f"{pytorch_version}-{'gpu' if use_gpu == True else 'cpu'}-{py_version}"
-
+    
+        tag = f"{PYTORCH_VERSION}-transformers{TRANSFORMERS_VERSION}-{'gpu-py39-cu117' if self._is_gpu_instance() else 'cpu-py39'}-ubuntu20.04"
+        # tag = f"{PYTORCH_VERSION}-{'gpu' if use_gpu == True else 'cpu'}-{PY_VERSION}"
         print(f'Image url:{repository}:{tag}')
         return f"{repository}:{tag}"
 
     def _is_gpu_instance(self):
-        return True if self._env.sagemaker_endpoint_instance_type.split(".")[1][0].lower() in ["p", "g"] else False
+        return True if self._instance_type.split(".")[1][0].lower() in ["p", "g"] else False
 
