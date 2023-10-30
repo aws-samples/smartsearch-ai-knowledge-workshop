@@ -19,9 +19,6 @@ from .config import PYTORCH_VERSION, TRANSFORMERS_VERSION, PY_VERSION, REGION_DI
 
 
 class EmbeddingModelInferenceInfra(Construct):
-    # @property
-    # def bucket_name(self):
-    #     return self._bucket_name
 
     @property
     def endpoint_name(self):
@@ -34,66 +31,50 @@ class EmbeddingModelInferenceInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id)
 
-        self._deploy_partition = "aws"
+        # env info
         self._region = os.environ.get("CDK_DEPLOY_REGION", os.environ["CDK_DEFAULT_REGION"])
         self._instance_type = kwargs['instance_type']
         self._project_name = kwargs['project_name']
+
+        # partition
+        self._deploy_partition = "aws"
         if self._region.startswith("cn"):
             self._deploy_partition = "aws-cn"
 
-        # self._local_model_path = self._get_local_model_path()
-
-        # self._data_bucket = self._create_data_bucket()
         self._sagemaker_role = self._create_sagemaker_role()
 
-        # self._model_deployment, s3_model_file_url = self._create_model_deployment()
+        endpoint = self._create_endpoint()
 
-        endpoint = self._create_endpoint(None, self._sagemaker_role)
-
-        # self._bucket_name = self._data_bucket.bucket_name
         self._endpoint_name = endpoint.attr_endpoint_name
         self._endpoint_ref = endpoint.ref
 
         cdk.CfnOutput(
             self, f"SageMakerEndpoint", value=self._endpoint_name)
 
-    def _get_local_model_path(self):
-        return os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), os.pardir, 'models')
-
-    def _create_endpoint(self, s3_model_file_url, sagemaker_role):
-        prefix = f"{self._project_name}"
+    def _create_endpoint(self):
         instance_type = self._instance_type
 
         image_uri = self._get_sagemaker_image_uri()
-
-        # HF_TASK          = "feature-extraction"
-        # HF_MODEL_ID      = "sentence-transformers/msmarco-distilbert-base-v3"
-        # SAGEMAKER_REGION = "us-east-1"
-        # SAGEMAKER_CONTAINER_LOG_LEVEL = 20
 
         # ===========================
         # ===== SAGEMAKER MODEL =====
         # ===========================
         model = sagemaker.CfnModel(
             self,
-            f"{prefix}Model",
-            execution_role_arn=sagemaker_role.role_arn,
+            f"Model",
+            execution_role_arn=self._sagemaker_role.role_arn,
             # the properties below are optional
             enable_network_isolation=False,
             containers=[
                 sagemaker.CfnModel.ContainerDefinitionProperty(
-                    container_hostname=f"{prefix}ContainerHostname",
+                    container_hostname=f"{self._project_name}ContainerHostname",
                     image=image_uri,
                     mode="SingleModel",
-                    # model_data_url=s3_model_file_url,
                     environment={
                         "HF_TASK": "feature-extraction",
                         "HF_MODEL_ID": "shibing624/text2vec-base-chinese",
                         "SAGEMAKER_CONTAINER_LOG_LEVEL": 20,
                         "SAGEMAKER_REGION": cdk.Aws.REGION,
-                        # "SAGEMAKER_PROGRAM": "inference.py",
-                        # "SAGEMAKER_SUBMIT_DIRECTORY": "/opt/ml/model/code"
                     },
                 )
             ],
@@ -107,7 +88,7 @@ class EmbeddingModelInferenceInfra(Construct):
         variant_name = "AllTraffic"
         endpoint_config = sagemaker.CfnEndpointConfig(
             self,
-            f"{prefix}EndpointConfig",
+            f"EPConfig",
             production_variants=[
                 sagemaker.CfnEndpointConfig.ProductionVariantProperty(
                     initial_instance_count=1,
@@ -127,8 +108,8 @@ class EmbeddingModelInferenceInfra(Construct):
 
         endpoint = sagemaker.CfnEndpoint(
             self,
-            f"{prefix}Endpoint",
-            endpoint_name=f'{prefix}Endpoint',
+            f"{self._project_name}Endpoint",
+            endpoint_name=f'{self._project_name}Endpoint',
             endpoint_config_name=endpoint_config.attr_endpoint_config_name,
         )
         cdk.CfnOutput(
@@ -144,7 +125,7 @@ class EmbeddingModelInferenceInfra(Construct):
             min_capacity=1,
             resource_id=f"endpoint/{endpoint.attr_endpoint_name}/variant/{variant_name}",
             scalable_dimension="sagemaker:variant:DesiredInstanceCount",
-            role=sagemaker_role
+            role=self._sagemaker_role
         )
         target.node.add_dependency(endpoint)
 
@@ -167,61 +148,6 @@ class EmbeddingModelInferenceInfra(Construct):
 
         return endpoint
 
-    def _create_data_bucket(self):
-        data_bucket = s3.Bucket(
-            self,
-            f"{self._project_name}ModelData",
-            removal_policy=cdk.RemovalPolicy.RETAIN,
-            object_ownership=s3.ObjectOwnership.OBJECT_WRITER,
-            # removal_policy=cdk.RemovalPolicy.DESTROY if self._env.is_dev() else cdk.RemovalPolicy.RETAIN,
-            encryption=s3.BucketEncryption.S3_MANAGED,
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL
-        )
-
-        data_bucket.add_to_resource_policy(
-            iam.PolicyStatement(
-                sid="AllowSSLRequestsOnly",
-                effect=iam.Effect.DENY,
-                actions=["s3:*"],
-                conditions={"Bool": {"aws:SecureTransport": "false"}},
-                principals=[iam.AnyPrincipal()],
-                resources=[
-                    data_bucket.arn_for_objects("*"),
-                    data_bucket.bucket_arn,
-                ],
-            )
-        )
-
-        cdk.CfnOutput(
-            self, f"ModelBucketName", value=data_bucket.bucket_name)
-        return data_bucket
-
-    def _create_model_deployment(self):
-        """
-         Copy one trained model and test images to the s3 bucket
-
-        :param bucket: bucket
-        :type bucket:
-        :return: a s3 bucket address for the model, the model is the one within this sample/model folder
-        :rtype: basestring
-        """
-        model_deployment = s3_deployment.BucketDeployment(
-            self,
-            "model_file",
-            sources=[s3_deployment.Source.asset(self._local_model_path)],
-            destination_bucket=self._data_bucket,
-            cache_control=[
-                s3_deployment.CacheControl.from_string(
-                    "max-age=65536,public,immutable"
-                )
-            ],
-            memory_limit=1024,
-            ephemeral_storage_size=cdk.Size.mebibytes(2048),
-            destination_key_prefix="model",
-        )
-
-        return model_deployment, f"s3://{self._data_bucket.bucket_name}/model/{self._env.sagemaker_inference_model_name}"
-
     def _create_sagemaker_role(self):
         # IAM Roles
         name = "Sagemaker"
@@ -239,7 +165,7 @@ class EmbeddingModelInferenceInfra(Construct):
                             actions=[
                                 "s3:GetObject",
                                 "s3:PutObject",
-                                "s3:DeleteObject",
+                                # "s3:DeleteObject",
                                 "s3:GetBucketAcl",
                                 "s3:PutObjectAcl",
                                 "s3:AbortMultipartUpload",
@@ -328,17 +254,17 @@ class EmbeddingModelInferenceInfra(Construct):
                                 "ecr:GetDownloadUrlForLayer",
                                 "ecr:BatchGetImage",
                                 "ecr:BatchCheckLayerAvailability",
-                                "ecr:SetRepositoryPolicy",
-                                "ecr:CompleteLayerUpload",
-                                "ecr:BatchDeleteImage",
-                                "ecr:UploadLayerPart",
-                                "ecr:DeleteRepositoryPolicy",
-                                "ecr:InitiateLayerUpload",
-                                "ecr:DeleteRepository",
-                                "ecr:PutImage",
-                                "ecr:CreateRepository",
-                                "ec2:CreateVpcEndpoint",
-                                "ec2:DescribeRouteTables",
+                                # "ecr:SetRepositoryPolicy",
+                                # "ecr:CompleteLayerUpload",
+                                # "ecr:BatchDeleteImage",
+                                # "ecr:UploadLayerPart",
+                                # "ecr:DeleteRepositoryPolicy",
+                                # "ecr:InitiateLayerUpload",
+                                # "ecr:DeleteRepository",
+                                # "ecr:PutImage",
+                                # "ecr:CreateRepository",
+                                # "ec2:CreateVpcEndpoint",
+                                # "ec2:DescribeRouteTables",
                                 "cloudwatch:PutMetricData",
                                 "cloudwatch:GetMetricData",
                                 "cloudwatch:GetMetricStatistics",
@@ -381,14 +307,11 @@ class EmbeddingModelInferenceInfra(Construct):
         return sagemaker_role
 
     def _get_sagemaker_image_uri(self):
-
         repository = (
             f"{REGION_DICT[self._region]}.dkr.ecr.{self._region}.amazonaws.com/huggingface-pytorch-inference"
         )
     
         tag = f"{PYTORCH_VERSION}-transformers{TRANSFORMERS_VERSION}-{'gpu-py39-cu117' if self._is_gpu_instance() else 'cpu-py39'}-ubuntu20.04"
-        # tag = f"{PYTORCH_VERSION}-{'gpu' if use_gpu == True else 'cpu'}-{PY_VERSION}"
-        print(f'Image url:{repository}:{tag}')
         return f"{repository}:{tag}"
 
     def _is_gpu_instance(self):
