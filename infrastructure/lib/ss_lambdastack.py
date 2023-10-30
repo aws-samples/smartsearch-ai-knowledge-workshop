@@ -15,9 +15,6 @@ from aws_cdk import (
     RemovalPolicy
 )
 
-binary_media_types = ["multipart/form-data"]
-
-
 class LambdaStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, search_engine_key: str, **kwargs) -> None:
@@ -121,7 +118,6 @@ class LambdaStack(Stack):
                             #     allow_methods=apigw.Cors.ALL_METHODS
                             # ),
                             endpoint_types=[apigw.EndpointType.REGIONAL],
-                            binary_media_types=binary_media_types
                             )
 
         if 'knn_faq' in func_selection:
