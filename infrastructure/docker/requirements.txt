@@ -1,0 +1,14 @@
+flask
+flask-cors
+protobuf==3.20.0
+transformers==4.27.1
+icetk
+cpm_kernels
+diffusers
+ftfy
+spacy
+nvgpu
+sentencepiece
+cpm_kernels
+urllib3==1.26.6
+accelerate

@@ -208,3 +208,6 @@ cython_debug/
 cdk.out/
 
 *.log
+
+# ignore model
+chatglm2-6b

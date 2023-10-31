@@ -11,6 +11,8 @@ from aws_cdk import (
 
 from lib.knowledge_vectordb_infra import KnowledgeVectorDbInfra
 from lib.embedding_model_inference_infra import EmbeddingModelInferenceInfra
+from lib.llm_application_docker import LLMApplicationDockerInfra
+from lib.application_infra import ApplicationInfra
 
 
 class LLMStreamingStack(Stack):
@@ -27,6 +29,19 @@ class LLMStreamingStack(Stack):
         em_inference_infra = EmbeddingModelInferenceInfra(
             self,
             f'{project_name}EmbeddingInference',
+            **kwargs
+        )
+
+        llm_docker_image = LLMApplicationDockerInfra(
+            self,
+            f'{project_name}DockerImage',
+            **kwargs
+        )
+
+        application_infra = ApplicationInfra(
+            self,
+            f'{project_name}Application',
+            image_uri = llm_docker_image.image_uri,
             **kwargs
         )
 
