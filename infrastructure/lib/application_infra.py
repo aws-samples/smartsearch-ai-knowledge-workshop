@@ -21,24 +21,15 @@ from constructs import Construct
 
 class ApplicationInfra(Construct):
     
-    def __init__(self, scope: Construct, id: str, **kwargs)-> None:
+    def __init__(self, scope: Construct, id: str, image_uri:str, **kwargs)-> None:
         super().__init__(scope, id)
-
-        image_uri = kwargs['image_uri']
-        region = os.environ.get("CDK_DEPLOY_REGION",
-                                os.environ["CDK_DEFAULT_REGION"])
-    
+        
+        region = kwargs['env'].region
 
         data = open("./user_data.sh", "rb").read()
-        # httpd.add_commands(str(data,'utf-8'))
         
         user_data = ec2.UserData.for_linux()
-        # user_data.add_commands(str(data,'utf-8'))
-        # user_data.add_commands(f'docker pull --verbose {image_uri}')
-        # docker run --gpus '"device=0"' -p 5000:5000 -it -d --restart=on-failure ${account}.dkr.ecr.${REGION}.amazonaws.com.cn/llm_smart_search:latest
-        # user_data.add_commands(f'docker run --gpus \'"device=0"\' -p 5000:5000 -it -d --restart=on-failure {image_uri}')
-
-        print(f'user_data: {user_data.render()}')
+        user_data.add_commands(str(data,'utf-8'))
         
         # vpc_infra = VPCInfra(
         #     self,
@@ -46,6 +37,25 @@ class ApplicationInfra(Construct):
         
         # ec2_role = self._create_ec2_role()
 
+        # # Deep Learning AMI GPU PyTorch 1.13.1
+        # # ec2.LookupMachineImage()
+
+        # gpu_image = ec2.LookupMachineImage(
+        #     name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
+        #     # the properties below are optional
+        #     # filters={
+        #     #     "filters_key": ["filters"]
+        #     # },
+        #     owners=["amazon"],
+        #     windows=False
+        # )
+
+        # image_id = gpu_image.get_image(scope).image_id
+        # print(f'The gpu image id we used for in LLM: {image_id}')
+        # # print(f'\nlookup_machine_image.dict: {gpu_image.__dict__}')
+        # # print(f'\nlookup_machine_image.get_image(scope): {gpu_image.get_image(scope).image_id}')
+        # # print(f'\nlookup_machine_image.get_image: {gpu_image.get_image()}')
+    
         # asg:autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
         #     self,
         #     "LLMASG",
@@ -53,7 +63,7 @@ class ApplicationInfra(Construct):
         #     instance_type=ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2),
         #     ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
         #     # machine_image=ec2.MachineImage.generic_linux({region:ami_img_id}), # pytorch gpu
-        #     machine_image=ec2.MachineImage.latest_amazon_linux(),
+        #     machine_image=image_id,
         #     block_devices=[autoscaling.BlockDevice(
         #         device_name="/dev/xvda",
         #         volume=autoscaling.BlockDeviceVolume.ebs(50,
@@ -65,10 +75,10 @@ class ApplicationInfra(Construct):
         #     )
         #     ],
         #     role = ec2_role,
-        #     user_data=httpd,
+        #     user_data=user_data,
         #     ssm_session_permissions = True,
-        #     min_capacity = min_capacity,
-        #     max_capacity = max_capacity,
+        #     min_capacity = 1,
+        #     max_capacity = 1,
         #     termination_policies= [autoscaling.TerminationPolicy.OLDEST_INSTANCE]
         # )
 
@@ -145,7 +155,7 @@ class VPCInfra(Construct):
             self,
             "LLMVPC",
             max_azs=3,
-            ip_addresses= ec2.IpAddresses.cidr("172.31.100.0/22"),
+            ip_addresses= ec2.IpAddresses.cidr("172.31.100.0/21"),
             subnet_configuration=[
                 ec2.SubnetConfiguration(
                     subnet_type=ec2.SubnetType.PUBLIC,

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 try:
     from aws_cdk import core as cdk
 except ImportError:
@@ -16,10 +17,10 @@ from lib.application_infra import ApplicationInfra
 
 
 class LLMStreamingStack(Stack):
-    def __init__(self, app: App, id: str, **kwargs) -> None:
-        super().__init__(app, id)
+    def __init__(self, app: App, id: str, project_name:str, instance_type:str, **kwargs) -> None:
+        super().__init__(app, id, **kwargs)
 
-        project_name = kwargs['project_name']
+        # project_name = kwargs['project_name']
         opensearch_infra = KnowledgeVectorDbInfra(
             self,
             f'{project_name}KnowledgeVectorDb',
@@ -29,6 +30,8 @@ class LLMStreamingStack(Stack):
         em_inference_infra = EmbeddingModelInferenceInfra(
             self,
             f'{project_name}EmbeddingInference',
+            project_name = project_name,
+            instance_type = instance_type,
             **kwargs
         )
 
@@ -54,7 +57,10 @@ instance_type = app.node.try_get_context("instance_type")
 llm_stack = LLMStreamingStack(app,
                               f"{project_name}Stack",
                               project_name=project_name,
-                              instance_type=instance_type)
+                              instance_type=instance_type,
+                              env=cdk.Environment(account=os.environ['CDK_DEFAULT_ACCOUNT'], 
+                                                  region=os.environ['CDK_DEFAULT_REGION'])
+                            )
 
 cdk.Tags.of(llm_stack).add('CNRP/PRJ', project_name)
 app.synth()

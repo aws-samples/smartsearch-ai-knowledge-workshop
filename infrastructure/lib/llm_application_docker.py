@@ -20,10 +20,8 @@ class LLMApplicationDockerInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id)
 
-        region = os.environ.get("CDK_DEPLOY_REGION",
-                                os.environ["CDK_DEFAULT_REGION"])
-        account = os.environ.get("CDK_DEPLOY_ACCOUNT",
-                                 os.environ["CDK_DEFAULT_ACCOUNT"])
+        region = kwargs['env'].region
+        account = kwargs['env'].account
         
         # ECR asset for our Docker image
         self.asset = ecr.DockerImageAsset(
@@ -31,7 +29,7 @@ class LLMApplicationDockerInfra(Construct):
         )
 
         image_uri = f'{account}.dkr.ecr.{region}.amazonaws.com:llm_smart_search:latest'
-        print('image_uri: {image_uri}')
+        print(f'image_uri: {image_uri}')
         self.asset.image_uri = image_uri
 
         cdk.CfnOutput(

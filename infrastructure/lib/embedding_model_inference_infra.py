@@ -28,13 +28,13 @@ class EmbeddingModelInferenceInfra(Construct):
     def endpoint_ref(self):
         return self._endpoint_ref
 
-    def __init__(self, scope: Construct, id: str, **kwargs):
+    def __init__(self, scope: Construct, id: str, project_name:str, instance_type:str, **kwargs):
         super().__init__(scope, id)
 
         # env info
-        self._region = os.environ.get("CDK_DEPLOY_REGION", os.environ["CDK_DEFAULT_REGION"])
-        self._instance_type = kwargs['instance_type']
-        self._project_name = kwargs['project_name']
+        self._region = kwargs['env'].region
+        self._instance_type = instance_type
+        self._project_name = project_name
 
         # partition
         self._deploy_partition = "aws"
@@ -100,8 +100,8 @@ class EmbeddingModelInferenceInfra(Construct):
             ],
         )
 
-        # endpoint_config.add_dependency(model)
-        endpoint_config.add_depends_on(model)
+        endpoint_config.add_dependency(model)
+        # endpoint_config.add_depends_on(model)
         # ==============================
         # ===== SAGEMAKER ENDPOINT =====
         # ==============================
