@@ -31,30 +31,17 @@ class ApplicationInfra(Construct):
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(str(data,'utf-8'))
         
-        # vpc_infra = VPCInfra(
-        #     self,
-        #     'LLMVPC')
+        vpc_infra = VPCInfra(
+            self,
+            'LLMVPC')
         
-        # ec2_role = self._create_ec2_role()
-
-        # # Deep Learning AMI GPU PyTorch 1.13.1
-        # # ec2.LookupMachineImage()
-
-        # gpu_image = ec2.LookupMachineImage(
-        #     name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
-        #     # the properties below are optional
-        #     # filters={
-        #     #     "filters_key": ["filters"]
-        #     # },
-        #     owners=["amazon"],
-        #     windows=False
-        # )
-
-        # image_id = gpu_image.get_image(scope).image_id
-        # print(f'The gpu image id we used for in LLM: {image_id}')
-        # # print(f'\nlookup_machine_image.dict: {gpu_image.__dict__}')
-        # # print(f'\nlookup_machine_image.get_image(scope): {gpu_image.get_image(scope).image_id}')
-        # # print(f'\nlookup_machine_image.get_image: {gpu_image.get_image()}')
+        ec2_role = self._create_ec2_role()
+        image_id = self._get_dl_image_id(scope)
+        
+        print(f'The gpu image id we used for in LLM: {image_id}')
+        # # # print(f'\nlookup_machine_image.dict: {gpu_image.__dict__}')
+        # # # print(f'\nlookup_machine_image.get_image(scope): {gpu_image.get_image(scope).image_id}')
+        # # # print(f'\nlookup_machine_image.get_image: {gpu_image.get_image()}')
     
         # asg:autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
         #     self,
@@ -144,6 +131,16 @@ class ApplicationInfra(Construct):
         cdk.CfnOutput(self, "Ec2RoleName", value=ec2_role.role_name)
 
         return ec2_role
+
+    def _get_dl_image_id(self, scope: Construct):
+        # to get Deep Learning AMI GPU PyTorch 1.13.1
+        gpu_image = ec2.LookupMachineImage(
+            name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
+            owners=["amazon"],
+            windows=False
+        )
+
+        return gpu_image.get_image(scope).image_id
 
 class VPCInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):
