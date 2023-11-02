@@ -211,3 +211,5 @@ cdk.out/
 
 # ignore model
 chatglm2-6b
+
+cdk.context.json

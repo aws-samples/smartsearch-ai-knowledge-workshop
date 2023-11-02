@@ -4,9 +4,6 @@
     "project_name": "RAGSearchWithLLM",
     "aws-cdk:enableDiffNoFail": "true",
     "@aws-cdk/core:stackRelativeExports": "true",
-    "llm_asg_min_capacity": 1,
-    "llm_asg_max_capacity": 2,
-    "instance_type": "ml.g4dn.2xlarge",
-    "gpu_ami_img_id": "ami-0e4245ea8b83848f6"
+    "instance_type": "ml.g4dn.2xlarge"
   }
 }

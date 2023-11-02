@@ -153,7 +153,7 @@ class VPCInfra(Construct):
             self,
             "LLMVPC",
             max_azs=3,
-            ip_addresses= ec2.IpAddresses.cidr("172.31.100.0/21"),
+            ip_addresses= ec2.IpAddresses.cidr("172.31.8.0/21"),
             subnet_configuration=[
                 ec2.SubnetConfiguration(
                     subnet_type=ec2.SubnetType.PUBLIC,

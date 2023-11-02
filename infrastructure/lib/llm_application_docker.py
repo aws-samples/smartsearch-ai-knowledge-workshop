@@ -8,14 +8,19 @@ except ImportError:
 
 from aws_cdk import (
     aws_iam as iam,
-    aws_ecr_assets as ecr,
+    aws_ecr as ecr,
+    aws_ecr_assets as ecr_assets,
 )
 
+from aws_cdk.aws_ecr_assets import DockerImageAsset
+
+
+import cdk_ecr_deployment as ecrdeploy
 
 class LLMApplicationDockerInfra(Construct):
     @property
     def image_uri(self):
-        return self.asset.image_uri
+        return self._image_uri
 
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id)
@@ -24,16 +29,30 @@ class LLMApplicationDockerInfra(Construct):
         account = kwargs['env'].account
         
         # ECR asset for our Docker image
-        self.asset = ecr.DockerImageAsset(
+        self.asset = ecr_assets.DockerImageAsset(
             self, "llm_smart_search", directory="./docker"
         )
 
-        image_uri = f'{account}.dkr.ecr.{region}.amazonaws.com:llm_smart_search:latest'
-        print(f'image_uri: {image_uri}')
-        self.asset.image_uri = image_uri
+        repo = ecr.Repository(
+            self, 
+            "ECR",
+            repository_name="llm_smart_search",
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+
+        # self.asset.image_uri = 'llm_smart_search'
+
+        self._image_uri = f'{repo.repository_uri}:latest'
+
+        ecrdeploy.ECRDeployment(self, "DeployDockerImage1",
+            src=ecrdeploy.DockerImageName(self.asset.image_uri),
+            dest=ecrdeploy.DockerImageName(self._image_uri)
+        )
+
+        print(f'LLM image {self._image_uri} uploaded!')
 
         cdk.CfnOutput(
-            self, f"LLMAppDockerImage", value=self.image_uri)
+            self, f"LLMAppDockerImage", value=self._image_uri)
         
 
 
