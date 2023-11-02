@@ -23,7 +23,6 @@ class ApplicationInfra(Construct):
     
     def __init__(self, scope: Construct, id: str, image_uri:str, **kwargs)-> None:
         super().__init__(scope, id)
-        
         region = kwargs['env'].region
 
         data = open("./user_data.sh", "rb").read()
@@ -43,14 +42,20 @@ class ApplicationInfra(Construct):
         # # # print(f'\nlookup_machine_image.get_image(scope): {gpu_image.get_image(scope).image_id}')
         # # # print(f'\nlookup_machine_image.get_image: {gpu_image.get_image()}')
     
+        lb = elbv2.ApplicationLoadBalancer(
+            self, "LLM-ALB",
+            vpc=vpc_infra.vpc,
+            internet_facing=True,
+            load_balancer_name='LLM-ALB')
+        
         # asg:autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
         #     self,
         #     "LLMASG",
         #     vpc=vpc_infra.vpc,
         #     instance_type=ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2),
         #     ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
-        #     # machine_image=ec2.MachineImage.generic_linux({region:ami_img_id}), # pytorch gpu
-        #     machine_image=image_id,
+        #     machine_image=ec2.MachineImage.generic_linux({region:image_id}), # pytorch gpu
+        #     # machine_image=image_id,
         #     block_devices=[autoscaling.BlockDevice(
         #         device_name="/dev/xvda",
         #         volume=autoscaling.BlockDeviceVolume.ebs(50,
@@ -59,7 +64,7 @@ class ApplicationInfra(Construct):
         #             throughput=600,
         #             delete_on_termination=True
         #         )
-        #     )
+        #       )
         #     ],
         #     role = ec2_role,
         #     user_data=user_data,
@@ -69,13 +74,7 @@ class ApplicationInfra(Construct):
         #     termination_policies= [autoscaling.TerminationPolicy.OLDEST_INSTANCE]
         # )
 
-        # # cdk.Tags.of(asg).add('Patch Group', 'AccountGuardian-PatchGroup-DO-NOT-DELETE')
-
-        # lb = elbv2.ApplicationLoadBalancer(
-        #     self, "LLM-ALB",
-        #     vpc=vpc_infra.vpc,
-        #     internet_facing=True,
-        #     load_balancer_name='LLM-ALB')
+        # cdk.Tags.of(asg).add('Patch Group', 'AccountGuardian-PatchGroup-DO-NOT-DELETE')
 
         # listener = lb.add_listener("Listener", port=1080, protocol=elbv2.ApplicationProtocol.HTTP)
         # listener.add_targets("Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg])
@@ -133,7 +132,9 @@ class ApplicationInfra(Construct):
         return ec2_role
 
     def _get_dl_image_id(self, scope: Construct):
-        # to get Deep Learning AMI GPU PyTorch 1.13.1
+        """
+        Get Deep Learning AMI GPU with PyTorch 1.13.1 for LLM docker
+        """
         gpu_image = ec2.LookupMachineImage(
             name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
             owners=["amazon"],
