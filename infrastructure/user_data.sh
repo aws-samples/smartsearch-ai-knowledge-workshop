@@ -4,7 +4,7 @@ REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/documen
 account=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)
 
 ## login
-docker login --username AWS --password $(aws ecr get-login-password --region ${REGION}) ${account}.dkr.ecr.${REGION}.amazonaws.com.cn
+docker login --username AWS --password $(aws ecr get-login-password --region ${REGION}) ${account}.dkr.ecr.${REGION}.amazonaws.com
 aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${account}.dkr.ecr.${REGION}.amazonaws.com
 
 ## pull image

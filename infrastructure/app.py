@@ -41,12 +41,12 @@ class LLMStreamingStack(Stack):
             **kwargs
         )
 
-        # application_infra = ApplicationInfra(
-        #     self,
-        #     f'{project_name}Application',
-        #     image_uri = llm_docker_image.image_uri,
-        #     **kwargs
-        # )
+        application_infra = ApplicationInfra(
+            self,
+            f'{project_name}Application',
+            image_uri = llm_docker_image.image_uri,
+            **kwargs
+        )
 
 
 
@@ -64,7 +64,3 @@ llm_stack = LLMStreamingStack(app,
 
 cdk.Tags.of(llm_stack).add('CNRP/PRJ', project_name)
 app.synth()
-
-
-
-
