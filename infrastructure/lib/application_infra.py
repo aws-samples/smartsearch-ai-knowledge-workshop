@@ -48,40 +48,40 @@ class ApplicationInfra(Construct):
             internet_facing=True,
             load_balancer_name='LLM-ALB')
         
-        # asg:autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
-        #     self,
-        #     "LLMASG",
-        #     vpc=vpc_infra.vpc,
-        #     instance_type=ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2),
-        #     ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
-        #     machine_image=ec2.MachineImage.generic_linux({region:image_id}), # pytorch gpu
-        #     # machine_image=image_id,
-        #     block_devices=[autoscaling.BlockDevice(
-        #         device_name="/dev/xvda",
-        #         volume=autoscaling.BlockDeviceVolume.ebs(50,
-        #             volume_type=autoscaling.EbsDeviceVolumeType.GP3,
-        #             encrypted = True,
-        #             throughput=600,
-        #             delete_on_termination=True
-        #         )
-        #       )
-        #     ],
-        #     role = ec2_role,
-        #     user_data=user_data,
-        #     ssm_session_permissions = True,
-        #     min_capacity = 1,
-        #     max_capacity = 1,
-        #     termination_policies= [autoscaling.TerminationPolicy.OLDEST_INSTANCE]
-        # )
+        asg:autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
+            self,
+            "LLMASG",
+            vpc=vpc_infra.vpc,
+            instance_type=ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2),
+            ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
+            machine_image=ec2.MachineImage.generic_linux({region:image_id}), # pytorch gpu
+            # machine_image=image_id,
+            block_devices=[autoscaling.BlockDevice(
+                device_name="/dev/xvda",
+                volume=autoscaling.BlockDeviceVolume.ebs(50,
+                    volume_type=autoscaling.EbsDeviceVolumeType.GP3,
+                    encrypted = True,
+                    throughput=600,
+                    delete_on_termination=True
+                )
+              )
+            ],
+            role = ec2_role,
+            user_data=user_data,
+            ssm_session_permissions = True,
+            min_capacity = 1,
+            max_capacity = 1,
+            termination_policies= [autoscaling.TerminationPolicy.OLDEST_INSTANCE]
+        )
 
-        # cdk.Tags.of(asg).add('Patch Group', 'AccountGuardian-PatchGroup-DO-NOT-DELETE')
+        cdk.Tags.of(asg).add('Patch Group', 'AccountGuardian-PatchGroup-DO-NOT-DELETE')
 
-        # listener = lb.add_listener("Listener", port=1080, protocol=elbv2.ApplicationProtocol.HTTP)
-        # listener.add_targets("Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg])
-        # listener.connections.allow_default_port_from_any_ipv4("Open to the world")
+        listener = lb.add_listener("Listener", port=1080, protocol=elbv2.ApplicationProtocol.HTTP)
+        listener.add_targets("Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg])
+        listener.connections.allow_default_port_from_any_ipv4("Open to the world")
 
-        # asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
-        # CfnOutput(self,"LoadBalancer",export_name="LLMLoadBalancer",value=f'{lb.load_balancer_dns_name}:1080/summarize')
+        asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
+        CfnOutput(self, "LoadBalancer", export_name="LLMLoadBalancer", value=f'{lb.load_balancer_dns_name}:1080/summarize')
     
     def _create_ec2_role(self):
         # EC2 IAM Roles
