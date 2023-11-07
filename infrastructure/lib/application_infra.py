@@ -20,7 +20,9 @@ from aws_cdk import (
 from constructs import Construct
 
 class ApplicationInfra(Construct):
-    
+    """
+    Create LLM application with ASG, ALB and LLM docker image
+    """
     def __init__(self, scope: Construct, id: str, image_uri:str, **kwargs)-> None:
         super().__init__(scope, id)
         region = kwargs['env'].region
@@ -36,11 +38,6 @@ class ApplicationInfra(Construct):
         
         ec2_role = self._create_ec2_role()
         image_id = self._get_dl_image_id(scope)
-        
-        print(f'The gpu image id we used for in LLM: {image_id}')
-        # # # print(f'\nlookup_machine_image.dict: {gpu_image.__dict__}')
-        # # # print(f'\nlookup_machine_image.get_image(scope): {gpu_image.get_image(scope).image_id}')
-        # # # print(f'\nlookup_machine_image.get_image: {gpu_image.get_image()}')
     
         lb = elbv2.ApplicationLoadBalancer(
             self, "LLM-ALB",
@@ -53,9 +50,7 @@ class ApplicationInfra(Construct):
             "LLMASG",
             vpc=vpc_infra.vpc,
             instance_type=ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2),
-            ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
             machine_image=ec2.MachineImage.generic_linux({region:image_id}), # pytorch gpu
-            # machine_image=image_id,
             block_devices=[autoscaling.BlockDevice(
                 device_name="/dev/xvda",
                 volume=autoscaling.BlockDeviceVolume.ebs(50,
@@ -231,64 +226,3 @@ class LLMStreamingStack(Stack):
         cdk.CfnOutput(self, "Ec2RoleName", value=ec2_role.role_name)
 
         return ec2_role
-    
-    def __init__(self, app: App, id: str, **kwargs) -> None:
-        super().__init__(app, id)
-
-        region = os.environ.get("CDK_DEPLOY_REGION",
-                                os.environ["CDK_DEFAULT_REGION"])
-        min_capacity = kwargs['min_capacity']
-        max_capacity = kwargs['max_capacity']
-        ami_img_id = kwargs['ami_img_id']
-
-        # VPC
-        vpc_infra = VPCInfra(
-            self,
-            'LLMVPC')
-
-        data = open("./httpd.sh", "rb").read()
-        httpd=ec2.UserData.for_linux()
-        httpd.add_commands(str(data,'utf-8'))
-
-        
-        ec2_role = self._create_ec2_role()
-
-        asg = autoscaling.AutoScalingGroup(
-            self,
-            "LLMASG",
-            vpc=vpc_infra.vpc,
-            instance_type=ec2.InstanceType.of(ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2),
-            ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
-            machine_image=ec2.MachineImage.generic_linux({region:ami_img_id}), # pytorch gpu
-            block_devices=[autoscaling.BlockDevice(
-                device_name="/dev/xvda",
-                volume=autoscaling.BlockDeviceVolume.ebs(120,
-                    volume_type=autoscaling.EbsDeviceVolumeType.GP3,
-                    encrypted = True,
-                    throughput=600,
-                    delete_on_termination=True
-                )
-            )
-            ],
-            role = ec2_role,
-            user_data=httpd,
-            ssm_session_permissions = True,
-            min_capacity = min_capacity,
-            max_capacity = max_capacity,
-            termination_policies= [autoscaling.TerminationPolicy.OLDEST_INSTANCE]
-        )
-
-        cdk.Tags.of(asg).add('Patch Group', 'AccountGuardian-PatchGroup-DO-NOT-DELETE')
-
-        lb = elbv2.ApplicationLoadBalancer(
-            self, "LLM-ALB",
-            vpc=vpc_infra.vpc,
-            internet_facing=True,
-            load_balancer_name='LLM-ALB')
-
-        listener = lb.add_listener("Listener", port=1080, protocol=elbv2.ApplicationProtocol.HTTP)
-        listener.add_targets("Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg])
-        listener.connections.allow_default_port_from_any_ipv4("Open to the world")
-
-        asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
-        CfnOutput(self,"LoadBalancer",export_name="LLMLoadBalancer",value=f'{lb.load_balancer_dns_name}:1080/summarize')

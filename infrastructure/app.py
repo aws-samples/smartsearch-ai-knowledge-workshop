@@ -17,7 +17,7 @@ from lib.application_infra import ApplicationInfra
 
 
 class LLMStreamingStack(Stack):
-    def __init__(self, app: App, id: str, project_name:str, instance_type:str, **kwargs) -> None:
+    def __init__(self, app: App, id: str, project_name:str, instance_type_em:str, **kwargs) -> None:
         super().__init__(app, id, **kwargs)
 
         # project_name = kwargs['project_name']
@@ -31,7 +31,7 @@ class LLMStreamingStack(Stack):
             self,
             f'{project_name}EmbeddingInference',
             project_name = project_name,
-            instance_type = instance_type,
+            instance_type = instance_type_em,
             **kwargs
         )
 
@@ -52,12 +52,12 @@ class LLMStreamingStack(Stack):
 
 app = App()
 project_name = app.node.try_get_context("project_name")
-instance_type = app.node.try_get_context("instance_type")
+instance_type_em = app.node.try_get_context("instance_type_em")
 
 llm_stack = LLMStreamingStack(app,
                               f"{project_name}Stack",
                               project_name=project_name,
-                              instance_type=instance_type,
+                              instance_type_em=instance_type_em,
                               env=cdk.Environment(account=os.environ['CDK_DEFAULT_ACCOUNT'], 
                                                   region=os.environ['CDK_DEFAULT_REGION'])
                             )
