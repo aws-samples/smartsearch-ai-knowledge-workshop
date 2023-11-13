@@ -76,8 +76,6 @@ class EmbeddingModelInferenceInfra(Construct):
             ],
         )
 
-        # model.node.add_dependency(self._model_deployment)
-
         # =====================================
         # ===== SAGEMAKER ENDPOINT CONFIG =====
         # =====================================
@@ -97,7 +95,6 @@ class EmbeddingModelInferenceInfra(Construct):
         )
 
         endpoint_config.add_dependency(model)
-        # endpoint_config.add_depends_on(model)
         # ==============================
         # ===== SAGEMAKER ENDPOINT =====
         # ==============================
