@@ -91,14 +91,9 @@ class ApplicationInfra(Construct):
             "Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg]
         )
         listener.connections.allow_default_port_from_any_ipv4("Open to the world")
-
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
-        CfnOutput(
-            self,
-            "LoadBalancer",
-            export_name="LLMLoadBalancer",
-            value=f"{lb.load_balancer_dns_name}:1080/summarize",
-        )
+
+        CfnOutput(self, "LoadBalancer", export_name="LLMLoadBalancer", value=f'{lb.load_balancer_dns_name}:1080/summarize')
 
     def _create_ec2_role(self):
         # EC2 IAM Roles
@@ -329,3 +324,4 @@ class LLMStreamingStack(Stack):
         CfnOutput(
             self, "LoadBalancer", export_name="LLMLoadBalancer", value=summarize_api
         )
+
