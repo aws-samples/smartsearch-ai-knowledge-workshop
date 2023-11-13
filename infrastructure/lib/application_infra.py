@@ -198,11 +198,6 @@ class VPCInfra(Construct):
     def vpc_endpoint(self):
         return self._vpc.endpoint_id
 
-    @property
-    def summarize_api(self):
-        return self.summarize_api
-
-
 class LLMStreamingStack(Stack):
     def _create_ec2_role(self):
         # EC2 IAM Roles
@@ -324,4 +319,3 @@ class LLMStreamingStack(Stack):
         CfnOutput(
             self, "LoadBalancer", export_name="LLMLoadBalancer", value=summarize_api
         )
-
