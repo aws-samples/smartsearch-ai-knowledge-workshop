@@ -48,6 +48,8 @@ class ApplicationInfra(Construct):
             load_balancer_name="LLM-ALB",
         )
 
+        self._summarize_api = f"{lb.load_balancer_dns_name}:1080/summarize"
+
         # creat asg
         asg: autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
             self,
@@ -93,7 +95,7 @@ class ApplicationInfra(Construct):
         ## todo change
         listener.connections.allow_default_port_from_any_ipv4("Open to the world")
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
-
+        
         CfnOutput(self, "LoadBalancer", export_name="LLMLoadBalancer", value=f'{lb.load_balancer_dns_name}:1080/summarize')
 
     def _create_ec2_role(self):
@@ -148,7 +150,8 @@ class ApplicationInfra(Construct):
         """
         gpu_image = ec2.LookupMachineImage(
             # name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
-            name="Amazon Linux 2023 AMI*",
+            # name="Amazon Linux 2023 AMI*",
+            name="al2023-ami-2023*",
             owners=["amazon"],
             windows=False,
         )
@@ -157,7 +160,7 @@ class ApplicationInfra(Construct):
 
     @property
     def summarize_api(self):
-        return self.summarize_api
+        return self._summarize_api
 
 class VPCInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):

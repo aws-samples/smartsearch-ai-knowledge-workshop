@@ -128,15 +128,18 @@ class FrontEndInfra(Construct):
         models_deployment = s3_deployment.BucketDeployment(
             self,
             "Models",
-            sources=[s3_deployment.Source.asset(os.path.join(DIRNAME, "../front-end/build"))],
+            sources=[s3_deployment.Source.asset(os.path.join(DIRNAME, "../../front-end/build"))],
             destination_bucket=website_bucket,
             destination_key_prefix="search"
         )
         return website_bucket
 
     def _prepare_static_web_pages(self, main_api, summarize_api):
-        build_static_web_cmd = f"""export REACT_APP_MAIN_API={main_api}
-        				export REACT_APP_SUMMARIZE_API={summarize_api}
+        build_static_web_cmd = f"""export REACT_APP_MAIN_API={main_api} |
+        				export REACT_APP_SUMMARIZE_API={summarize_api} |
 						./build-s3-dist.sh
                 """
+        print(f'run commands: {build_static_web_cmd}')
         os.system(build_static_web_cmd)
+        print(f'ran commands: {build_static_web_cmd}')
+        
