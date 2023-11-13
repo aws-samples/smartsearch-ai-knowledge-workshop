@@ -23,7 +23,7 @@ class ApplicationInfra(Construct):
     """
     Create llm web ec2 instance and alb and a load balance before ec2 asg
     """
-    def __init__(self, scope: Construct, id: str, image_uri: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id)
         region = kwargs["env"].region
 
@@ -38,10 +38,8 @@ class ApplicationInfra(Construct):
         image_id = self._get_dl_image_id(scope)
 
         print(f"The gpu image id we used for in LLM: {image_id}")
-        # # # print(f'\nlookup_machine_image.dict: {gpu_image.__dict__}')
-        # # # print(f'\nlookup_machine_image.get_image(scope): {gpu_image.get_image(scope).image_id}')
-        # # # print(f'\nlookup_machine_image.get_image: {gpu_image.get_image()}')
 
+        # creat load balance
         lb = elbv2.ApplicationLoadBalancer(
             self,
             "LLM-ALB",
@@ -50,6 +48,7 @@ class ApplicationInfra(Construct):
             load_balancer_name="LLM-ALB",
         )
 
+        # creat asg
         asg: autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
             self,
             "LLMASG",
@@ -84,12 +83,14 @@ class ApplicationInfra(Construct):
 
         cdk.Tags.of(asg).add("Patch Group", "AccountGuardian-PatchGroup-DO-NOT-DELETE")
 
+        # added listener
         listener = lb.add_listener(
             "Listener", port=1080, protocol=elbv2.ApplicationProtocol.HTTP
         )
         listener.add_targets(
             "Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg]
         )
+        ## todo change
         listener.connections.allow_default_port_from_any_ipv4("Open to the world")
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
 
@@ -139,8 +140,6 @@ class ApplicationInfra(Construct):
             ],
         )
 
-        cdk.CfnOutput(self, "Ec2RoleName", value=ec2_role.role_name)
-
         return ec2_role
 
     def _get_dl_image_id(self, scope: Construct):
@@ -148,13 +147,17 @@ class ApplicationInfra(Construct):
         Get Deep Learning AMI GPU with PyTorch 1.13.1 for LLM docker
         """
         gpu_image = ec2.LookupMachineImage(
-            name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
+            # name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
+            name="Amazon Linux 2023 AMI*",
             owners=["amazon"],
             windows=False,
         )
 
         return gpu_image.get_image(scope).image_id
 
+    @property
+    def summarize_api(self):
+        return self.summarize_api
 
 class VPCInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):

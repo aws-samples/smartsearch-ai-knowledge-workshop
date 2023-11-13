@@ -37,24 +37,31 @@ class LLMStreamingStack(Stack):
             **kwargs
         )
 
-        llm_docker_image = LLMApplicationDockerInfra(
-            self,
-            f'{project_name}DockerImage',
-            **kwargs
-        )
+        # llm_docker_image = LLMApplicationDockerInfra(
+        #     self,
+        #     f'{project_name}DockerImage',
+        #     **kwargs
+        # )
 
         application_infra = ApplicationInfra(
             self,
             f'{project_name}Application',
-            image_uri = llm_docker_image.image_uri,
             **kwargs
         )
 
-        front_bucket_cf_infra = FrontEndInfra(
+        # front_bucket_cf_infra = FrontEndInfra(
+        #     self,
+        #     f"{project_name}Front",
+        #     main_api="opensearch_infra",
+        #     summarize_api="summarize_api",
+        #     **kwargs,
+        # )
+
+        front_end_infra = FrontEndInfra(
             self,
-            f"{project_name}Front",
-            main_api="main_api",
-            summarize_api="summarize_api",
+            f"{project_name}Frontend",
+            main_api=opensearch_infra.domain_endpoint,
+            summarize_api=application_infra.summarize_api,
             **kwargs,
         )
 
