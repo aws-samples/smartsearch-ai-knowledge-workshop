@@ -62,31 +62,31 @@ class KnowledgeVectorDbInfra(Construct):
     secret = self._create_secret()
 
     ops_domain = opensearch.Domain(self,
-                                   "OpenSearch",
-                                    domain_name='knowledge-vector-db',
-                                    version=opensearch.EngineVersion.OPENSEARCH_2_7,
-                                    capacity={
-                                        "master_nodes": 0,
-                                        "master_node_instance_type": "t3.small.search",
-                                        "data_nodes": 1,
-                                        "data_node_instance_type": "t3.small.search"
-                                    },
-                                    ebs={
-                                        "volume_size": 10,
-                                        "volume_type": ec2.EbsDeviceVolumeType.GP3
-                                    },
-                                    fine_grained_access_control=opensearch.AdvancedSecurityOptions(
-                                        master_user_name=secret.secret_value_from_json("username").unsafe_unwrap(),
-                                        master_user_password=secret.secret_value_from_json("password")
-                                    ),
-                                    enforce_https=True,  # Enforce HTTPS is required when fine-grained access control is enabled.
-                                    node_to_node_encryption=True, # Node-to-node encryption is required when fine-grained access control is enabled
-                                    encryption_at_rest={ # Encryption-at-rest is required when fine-grained access control is enabled.
-                                        "enabled": True
-                                    },
-                                    use_unsigned_basic_auth=True,  # default: False
-                                    removal_policy=cdk.RemovalPolicy.DESTROY,
-                                   )
+                           "OpenSearch",
+                            domain_name='knowledge-vector-db',
+                            version=opensearch.EngineVersion.OPENSEARCH_2_7,
+                            capacity={
+                                "master_nodes": 0,
+                                "master_node_instance_type": "t3.small.search",
+                                "data_nodes": 1,
+                                "data_node_instance_type": "t3.small.search"
+                            },
+                            ebs={
+                                "volume_size": 10,
+                                "volume_type": ec2.EbsDeviceVolumeType.GP3
+                            },
+                            fine_grained_access_control=opensearch.AdvancedSecurityOptions(
+                                master_user_name=secret.secret_value_from_json("username").unsafe_unwrap(),
+                                master_user_password=secret.secret_value_from_json("password")
+                            ),
+                            enforce_https=True,  # Enforce HTTPS is required when fine-grained access control is enabled.
+                            node_to_node_encryption=True, # Node-to-node encryption is required when fine-grained access control is enabled
+                            encryption_at_rest={ # Encryption-at-rest is required when fine-grained access control is enabled.
+                                "enabled": True
+                            },
+                            use_unsigned_basic_auth=True,  # default: False
+                            removal_policy=cdk.RemovalPolicy.DESTROY,
+                           )
 
     self.search_domain = ops_domain.domain_endpoint
     self.search_domain_arn = ops_domain.domain_arn

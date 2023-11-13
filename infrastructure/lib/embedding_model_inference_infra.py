@@ -1,4 +1,3 @@
-import os
 from constructs import Construct
 
 try:
@@ -8,8 +7,6 @@ except ImportError:
 
 from aws_cdk import (
     aws_iam as iam,
-    aws_s3 as s3,
-    aws_s3_deployment as s3_deployment,
     aws_cloudwatch as cloudwatch,
     aws_sagemaker as sagemaker,
     aws_applicationautoscaling as asg,
@@ -19,7 +16,9 @@ from .config import PYTORCH_VERSION, TRANSFORMERS_VERSION, PY_VERSION, REGION_DI
 
 
 class EmbeddingModelInferenceInfra(Construct):
-
+    """
+    Create an endpoint to generate embeddings for text
+    """
     @property
     def endpoint_name(self):
         return self._endpoint_name
@@ -56,9 +55,6 @@ class EmbeddingModelInferenceInfra(Construct):
 
         image_uri = self._get_sagemaker_image_uri()
 
-        # ===========================
-        # ===== SAGEMAKER MODEL =====
-        # ===========================
         model = sagemaker.CfnModel(
             self,
             f"Model",

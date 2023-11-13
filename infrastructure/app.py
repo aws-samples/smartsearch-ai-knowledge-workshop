@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+
 try:
     from aws_cdk import core as cdk
 except ImportError:
@@ -14,6 +15,7 @@ from lib.knowledge_vectordb_infra import KnowledgeVectorDbInfra
 from lib.embedding_model_inference_infra import EmbeddingModelInferenceInfra
 from lib.llm_application_docker import LLMApplicationDockerInfra
 from lib.application_infra import ApplicationInfra
+from lib.frontend_infra import FrontEndInfra
 
 
 class LLMStreamingStack(Stack):
@@ -48,6 +50,13 @@ class LLMStreamingStack(Stack):
             **kwargs
         )
 
+        front_bucket_cf_infra = FrontEndInfra(
+            self,
+            f"{project_name}Front",
+            main_api="main_api",
+            summarize_api="summarize_api",
+            **kwargs,
+        )
 
 
 app = App()
@@ -58,7 +67,7 @@ llm_stack = LLMStreamingStack(app,
                               f"{project_name}Stack",
                               project_name=project_name,
                               instance_type_em=instance_type_em,
-                              env=cdk.Environment(account=os.environ['CDK_DEFAULT_ACCOUNT'], 
+                              env=cdk.Environment(account=os.environ['CDK_DEFAULT_ACCOUNT'],
                                                   region=os.environ['CDK_DEFAULT_REGION'])
                             )
 
