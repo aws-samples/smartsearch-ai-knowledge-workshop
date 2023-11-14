@@ -55,8 +55,8 @@ class ApplicationInfra(Construct):
             "LLMASG",
             vpc=vpc_infra.vpc,
             instance_type=ec2.InstanceType.of(
-                # ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2,
-                ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM ##TODO
+                ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2,
+                # ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM ##TODO
             ),
             ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
             machine_image=ec2.MachineImage.generic_linux(
@@ -149,9 +149,8 @@ class ApplicationInfra(Construct):
         Get Deep Learning AMI GPU with PyTorch 1.13.1 for LLM docker
         """
         gpu_image = ec2.LookupMachineImage(
-            # name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
-            # name="Amazon Linux 2023 AMI*",
-            # name="al2023-ami-2023*", ##TODO
+            name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
+            # name="al2023-ami-2023*",
             name="al2023-ami-2023*x86_64",
             owners=["amazon"],
             windows=False,
