@@ -76,7 +76,7 @@ class OpenSearchClient(object):
 
         sm_client = boto3_session.client(service_name="secretsmanager")
         host = _get_string_from_env('host', '')
-        master_user = sm_client.get_secret_value(SecretId='VectorDBMasterUserSecret')['SecretString']
+        master_user = sm_client.get_secret_value(SecretId='VectorDBMasterUserCredentials')['SecretString']
 
         user_data = json.loads(master_user)
         username = user_data.get('username')
@@ -92,7 +92,7 @@ class OpenSearchClient(object):
                           ssl_show_warn=False)
 
     @staticmethod
-    def _get_query(manufacturing_process_number, vector=[], size_output=5, knn_k=6):
+    def _get_query(vector=[], size_output=5, knn_k=6):
         query = {
             "size": size_output,
             "from": 0,
@@ -111,10 +111,9 @@ class OpenSearchClient(object):
         return query
 
     def knn_search_by_text_vectors(self,
-                                   manufacturing_process_number,
                                    text_vector,
                                    knn_k=6,
-                                   size_output=10):
+                                   size_output=8):
         """
         Search by vectors
 
@@ -315,23 +314,14 @@ def _param_check(event):
     ## check input body
     json_body = json.loads(event["body"])
     search_words = json_body.get('search_words')
-    manufacturing_process_number = json_body.get('manufacturing_process_number')
-
     search_words_max_len = _get_int_from_env('search_words_max_size', 100)
-    manufacturing_process_number_max_len = _get_int_from_env('manufacturing_process_number_max_size', 30)
 
     ## check search_words
     checked_search_words = _check_len(search_words_max_len, search_words, 'search_words')
     if checked_search_words:
-        return checked_search_words, None, None
+        return checked_search_words, None
 
-    ## check manufacturing_process_number
-    checked_process_number = _check_len(manufacturing_process_number_max_len, manufacturing_process_number,
-                                        'manufacturing_process_number')
-    if checked_process_number:
-        return checked_process_number, None, None
-
-    return None, search_words, manufacturing_process_number
+    return None, search_words
 
 
 def _generate_embedding(search_words):
@@ -339,9 +329,9 @@ def _generate_embedding(search_words):
     return embedding_client.generate_vectors([search_words])
 
 
-def _synthetic_search(manufacturing_process_number, search_vector):
+def _semantic_search(search_vector):
     opensearch_client = _get_opensearch_client()
-    return opensearch_client.knn_search_by_text_vectors(manufacturing_process_number, search_vector)
+    return opensearch_client.knn_search_by_text_vectors(search_vector)
 
 
 def _search_response(searched_results):
@@ -350,14 +340,14 @@ def _search_response(searched_results):
 
 # Lambda execution starts here
 def lambda_handler(event, context):
-    errors, search_words, manufacturing_process_number = _param_check(event)
+    errors, search_words = _param_check(event)
     if errors:
         return errors
 
     stopwatch = Stopwatch().start()
     logger.debug(f"Start to search by {search_words}")
     search_vector = _generate_embedding(search_words)
-    searched_results = _synthetic_search(manufacturing_process_number, search_vector[0])
+    searched_results = _semantic_search(search_vector[0])
     lapsed = stopwatch.stop()
     logger.info(f"searched lapsed time {lapsed} by {search_words}, searched result: {searched_results}")
 

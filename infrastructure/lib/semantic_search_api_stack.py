@@ -34,10 +34,11 @@ class SemanticSearchLambdaStack(Stack):
             secret_name = "OpenSearchHostURL"
         )
 
+        # create lambda for semantic search
         semantic_lambda = self._create_semantic_lambda(id=construct_id, host=search_engine, em_endpoint_name=em_endpoint_name)
-
+        
+        # create an api gateway for this lambda
         self._create_apigw(region=kwargs['env'].region, semantic_lambda=semantic_lambda)
-
 
     def _create_semantic_lambda(self, id, host, em_endpoint_name):
         index = self.node.try_get_context("semantic_search_index_name")
@@ -81,7 +82,7 @@ class SemanticSearchLambdaStack(Stack):
                                              image=_lambda.Runtime.PYTHON_3_9.bundling_image,
                                              command=[
                                                  "bash", "-c",
-                                                 "pip install -r requirements.txt --no-cache-dir -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com -t /asset-output && cp -au . /asset-output"
+                                                 "pip install -r requirements.txt --no-cache-dir -t /asset-output && cp -au . /asset-output"
                                              ],
                                          ),
                                          ),
