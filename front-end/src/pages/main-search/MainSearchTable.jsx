@@ -14,15 +14,10 @@ const MainSearchTable = ({
   setBtnLoading,
 }) => {
   const [filteringText, setFilteringText] = useState("");
-  const [processNumber, setProcessNumber] = useState("");
 
   const search = () => {
-    if (!processNumber) {
-      alert("请输入工艺号");
-      return;
-    }
     if (!filteringText) {
-      alert("请输入要搜索的问题");
+      alert("Please input your question");
       return;
     }
 
@@ -37,7 +32,7 @@ const MainSearchTable = ({
       headers: HEADERS,
       data: JSON.stringify({
         search_words: filteringText,
-        manufacturing_process_number: processNumber,
+        manufacturing_process_number: "",
       }),
     })
       .then((response) => {
@@ -75,24 +70,11 @@ const MainSearchTable = ({
   };
 
   return (
-    <Grid gridDefinition={[{ colspan: 2 }, { colspan: 6 }, { colspan: 4 }]}>
+    <Grid gridDefinition={[{ colspan: 6 }, { colspan: 6 }]}>
       <FormField
         label={
           <div>
-            工艺号<span className="must-input">*</span>
-          </div>
-        }
-      >
-        <Input
-          onChange={({ detail }) => setProcessNumber(detail.value)}
-          value={processNumber}
-          placeholder="【必填】请输入工艺号"
-        />
-      </FormField>
-      <FormField
-        label={
-          <div>
-            搜索内容<span className="must-input">*</span>
+            Search question<span className="must-input">*</span>
           </div>
         }
       >
@@ -101,12 +83,12 @@ const MainSearchTable = ({
             setFilteringText(detail.value?.substring(0, 200))
           }
           value={filteringText}
-          placeholder="【必填】请输入搜索内容"
+          placeholder="[Required] Please enter search content"
         />
       </FormField>
-      <FormField label="操作">
+      <FormField label="Operate">
         <Button onClick={() => search()} loading={btnLoading} iconName="search">
-          搜&nbsp;索
+          Search
         </Button>
       </FormField>
     </Grid>

@@ -18,14 +18,14 @@ const MainSearchHeader = ({
         <>
           <BreadcrumbGroup
             items={[
-              { text: "Vistsco", href: "#" },
-              { text: "知识库", href: "#" },
+              { text: "Smart Search", href: "#" },
+              { text: "Knowledge", href: "#" },
             ]}
-            ariaLabel="知识库"
+            ariaLabel="Knowledge"
           />
           <SpaceBetween size="m">
-            <Header variant="h1" description="请在下方输入您的问题并做筛选">
-              知识库
+            <Header variant="h1" description="A smart search and LLM knowledge">
+              Knowledge
             </Header>
           </SpaceBetween>
         </>
@@ -33,8 +33,8 @@ const MainSearchHeader = ({
     >
       <Container
         header={
-          <Header variant="h2" description="请在此处输入您的问题描述">
-            问题描述
+          <Header variant="h2" description="Please input your question">
+            Question
           </Header>
         }
       >

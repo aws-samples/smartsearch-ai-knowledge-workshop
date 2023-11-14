@@ -15,7 +15,7 @@ const CommonTopNav = () => {
       i18nStrings={i18nStrings}
       identity={{
         href: "#",
-        title: "Vitesco 知识库",
+        title: "Smart Search Knowledge",
       }}
       utilities={[
         {

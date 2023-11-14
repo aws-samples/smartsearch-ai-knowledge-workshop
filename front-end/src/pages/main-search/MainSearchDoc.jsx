@@ -36,7 +36,7 @@ const COLUMN_DEFINITIONS = addColumnSortLabels([
   {
     id: "question",
     sortingField: "question",
-    header: "问题",
+    header: "Question",
     cell: (item) => item.question,
     minWidth: 180,
   },
@@ -44,7 +44,7 @@ const COLUMN_DEFINITIONS = addColumnSortLabels([
   {
     id: "answers",
     sortingField: "answers",
-    header: "分析与处理",
+    header: "Analysis and processing",
     cell: (item) => (
       <div
         dangerouslySetInnerHTML={{
@@ -57,26 +57,26 @@ const COLUMN_DEFINITIONS = addColumnSortLabels([
   {
     id: "machinetypename",
     sortingField: "machinetypename",
-    header: "工艺名称",
+    header: "Process",
     cell: (item) => item.machinetypename,
   },
   {
     id: "linename",
     sortingField: "linename",
-    header: "流水线",
+    header: "Assembly line",
     cell: (item) => item.linename,
     minWidth: 220,
   },
   {
     id: "manufacturing_process_number",
     sortingField: "manufacturing_process_number",
-    header: "工艺号",
+    header: "Process number",
     cell: (item) => item.manufacturing_process_number,
   },
   {
     id: "reply_upload_file",
     sortingField: "reply_upload_file",
-    header: "相关手册",
+    header: "Related manuals",
     cell: (item) => item.reply_upload_file,
     minWidth: 200,
   },
@@ -84,54 +84,54 @@ const COLUMN_DEFINITIONS = addColumnSortLabels([
     id: "action_des",
     sortingField: "action_des",
     cell: (item) => item.action_des,
-    header: "处理方式",
+    header: "Processing method",
   },
   {
     id: "root_cause_des",
     sortingField: "root_cause_des",
-    header: "根本原因",
+    header: "Cause",
     cell: (item) => item.root_cause_des,
   },
   {
     id: "upload_date",
     sortingField: "upload_date",
-    header: "更新日期",
+    header: "Update time",
     cell: (item) => item.upload_date,
   },
   {
     id: "problemid",
     sortingField: "problemid",
-    header: "问题ID",
+    header: "Question ID",
     cell: (item) => item.problemid,
   },
   {
     id: "linekey",
     sortingField: "linekey",
-    header: "流水线ID",
+    header: "Assembly ID",
     cell: (item) => item.linekey,
   },
   {
     id: "machinekey",
     sortingField: "machinekey",
-    header: "设备ID",
+    header: "Device ID",
     cell: (item) => item.machinekey,
   },
   {
     id: "action_linkid",
     sortingField: "action_linkid",
-    header: "处理方式Id",
+    header: "Processing method Id",
     cell: (item) => item.action_linkid,
   },
   {
     id: "root_causeid",
     sortingField: "root_causeid",
-    header: "根本原因ID",
+    header: "Cause ID",
     cell: (item) => item.root_causeid,
   },
   {
     id: "machinetypekey",
     sortingField: "machinetypekey",
-    header: "工艺号ID",
+    header: "Process number ID",
     cell: (item) => item.machinetypekey,
   },
 ]);
@@ -210,7 +210,7 @@ function TableContent({ distributions, updateTools }) {
       !Array.isArray(selectedItems) ||
       selectedItems.length === 0
     ) {
-      alert("请选择要分析的数据");
+      alert("Please select one or more data.");
       return;
     }
     const requestApi = SUMMARIZE_API;
@@ -323,7 +323,7 @@ function TableContent({ distributions, updateTools }) {
           <Alert
             key="alt-answer-msg"
             statusIconAriaLabel="Info"
-            header="分析结果"
+            header="Analyze result"
             dismissible
             onDismiss={alertDismiss}
           >
@@ -367,16 +367,16 @@ function TableContent({ distributions, updateTools }) {
         filter={
           <>
             <Grid gridDefinition={[{ colspan: 6 }, { colspan: 6 }]}>
-              <FormField label="过滤词">
+              <FormField label="Filter">
                 <TextFilter
                   className="filter-container-text"
                   {...filterProps}
-                  filteringAriaLabel="请输入过滤词"
-                  filteringPlaceholder="请输入过滤词"
+                  filteringAriaLabel="Please input filter"
+                  filteringPlaceholder="Please input filter"
                   countText={getFilterCounterText(filteredItemsCount)}
                 />
               </FormField>
-              <FormField label="分析操作">
+              <FormField label="Analyze">
                 <div>
                   <Button
                     iconUrl="/icons8-brain-64.png"
@@ -386,7 +386,7 @@ function TableContent({ distributions, updateTools }) {
                     variant="primary"
                     className="btn-brain-img"
                   >
-                    &nbsp;智&nbsp;能&nbsp;分&nbsp;析
+                    Insight
                   </Button>
                   <Button
                     iconName="view-full"
@@ -395,12 +395,11 @@ function TableContent({ distributions, updateTools }) {
                     variant="link"
                     onClick={stopSummarize}
                   >
-                    停&nbsp;止&nbsp;分&nbsp;析
+                    Stop
                   </Button>
                 </div>
               </FormField>
             </Grid>
-            <Grid gridDefinition={[{ colspan: 6 }, { colspan: 6 }]}></Grid>
           </>
         }
         preferences={
