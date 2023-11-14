@@ -92,40 +92,22 @@ class OpenSearchClient(object):
                           ssl_show_warn=False)
 
     @staticmethod
-    def _get_query(manufacturing_process_number, vector=[], size_output=10, knn_k=6):
+    def _get_query(manufacturing_process_number, vector=[], size_output=5, knn_k=6):
         query = {
             "size": size_output,
             "from": 0,
             "_source": {
-                "excludes": ["question_vector", "answers_vector"]
+                "excludes": ["question_vector"]
             },
             "query": {
-                "bool": {
-                    "filter": {
-                        "bool": {
-                            "must": [
-                                {
-                                    "match": {
-                                        "manufacturing_process_number": manufacturing_process_number
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "must": [
-                        {
-                            "knn": {
-                                "question_vector": {
-                                    "vector": vector,
-                                    "k": min(knn_k, 256),
-                                }
-                            }
-                        }
-                    ]
+                "knn": {
+                    "question_vector": {
+                        "vector": vector,
+                        "k": min(knn_k, 256)
+                    }
                 }
             }
         }
-        # print(query)
         return query
 
     def knn_search_by_text_vectors(self,
@@ -145,13 +127,12 @@ class OpenSearchClient(object):
         if text_vector is None or len(text_vector) == 0:
             raise ValueError('Text vectors cannot be null or empty')
 
-        query = OpenSearchClient._get_query(manufacturing_process_number=manufacturing_process_number,
-                                            vector=text_vector,
+        query = OpenSearchClient._get_query(vector=text_vector,
                                             size_output=size_output,
                                             knn_k=knn_k)
         try:
             logger.debug(
-                f"Querying answers from index {self._index} by {manufacturing_process_number} and vector with length {len(text_vector)}")
+                f"Querying answers from index {self._index} by vector with length {len(text_vector)}")
 
             response = self._client.search(request_timeout=self._request_timeout,
                                            index=self._index,
