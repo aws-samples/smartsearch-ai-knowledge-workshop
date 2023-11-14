@@ -4,6 +4,7 @@
     "project_name": "RAGSearchWithLLM",
     "aws-cdk:enableDiffNoFail": "true",
     "@aws-cdk/core:stackRelativeExports": "true",
-    "instance_type_em": "ml.g4dn.xlarge"
+    "instance_type_em": "ml.g4dn.xlarge",
+    "semantic_search_index_name": "semantic_search_knowledge_index"
   }
 }

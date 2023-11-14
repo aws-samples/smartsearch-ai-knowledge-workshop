@@ -11,72 +11,47 @@ from aws_cdk import (
     App, CfnOutput, Stack
 )
 
-from lib.knowledge_vectordb_infra import KnowledgeVectorDbInfra
-from lib.embedding_model_inference_infra import EmbeddingModelInferenceInfra
-from lib.llm_application_docker import LLMApplicationDockerInfra
-from lib.application_infra import ApplicationInfra
-from lib.frontend_infra import FrontEndInfra
-
-
-class LLMStreamingStack(Stack):
-    def __init__(self, app: App, id: str, project_name:str, instance_type_em:str, **kwargs) -> None:
-        super().__init__(app, id, **kwargs)
-
-        # project_name = kwargs['project_name']
-        opensearch_infra = KnowledgeVectorDbInfra(
-            self,
-            f'{project_name}KnowledgeVectorDb',
-            **kwargs
-        )
-
-        em_inference_infra = EmbeddingModelInferenceInfra(
-            self,
-            f'{project_name}EmbeddingInference',
-            project_name = project_name,
-            instance_type = instance_type_em,
-            **kwargs
-        )
-
-        # llm_docker_image = LLMApplicationDockerInfra(
-        #     self,
-        #     f'{project_name}DockerImage',
-        #     **kwargs
-        # )
-
-        application_infra = ApplicationInfra(
-            self,
-            f'{project_name}Application',
-            **kwargs
-        )
-
-        # front_bucket_cf_infra = FrontEndInfra(
-        #     self,
-        #     f"{project_name}Front",
-        #     main_api="opensearch_infra",
-        #     summarize_api="summarize_api",
-        #     **kwargs,
-        # )
-
-        front_end_infra = FrontEndInfra(
-            self,
-            f"{project_name}Frontend",
-            main_api=opensearch_infra.domain_endpoint,
-            summarize_api=application_infra.summarize_api,
-            **kwargs,
-        )
+from lib.smart_search_infra_stack import SmartSearchInfraStack
+from lib.semantic_search_api_stack import SemanticSearchLambdaStack
+from lib.smart_search_frontend_stack import SmartSearchFrontendStack
 
 
 app = App()
 project_name = app.node.try_get_context("project_name")
 instance_type_em = app.node.try_get_context("instance_type_em")
 
-llm_stack = LLMStreamingStack(app,
-                              f"{project_name}Stack",
-                              project_name=project_name,
-                              instance_type_em=instance_type_em,
-                              env=cdk.Environment(account=os.environ['CDK_DEFAULT_ACCOUNT'],
-                                                  region=os.environ['CDK_DEFAULT_REGION'])
-                            )
+AWS_ENV = cdk.Environment(account=os.environ['CDK_DEFAULT_ACCOUNT'],
+                          region=os.environ['CDK_DEFAULT_REGION'])
 
-cdk.Tags.of(llm_stack).add('CNRP/PRJ', project_name)
+infra_stack = SmartSearchInfraStack(app,
+                                    f"{project_name}InfraStack",
+                                    project_name=project_name,
+                                    instance_type_em=instance_type_em,
+                                    env=AWS_ENV,
+                                    description="Smart search infrastructure including embedding endpont, vector db, llm docker and llm application",
+                                    )
+
+semantic_search_stack = SemanticSearchLambdaStack(app,
+                                    f"{project_name}SemanticSearchLambdaStack",
+                                    search_engine=infra_stack.opensearch_domain_endpoint,
+                                    em_endpoint_name=infra_stack.em_endpoint_name,
+                                    env=AWS_ENV,
+                                    description="Semantic search in Smart search as a moddler layer to handle search across vector db and keywords embedding",
+                                    )
+semantic_search_stack.add_dependency(infra_stack)
+
+frontend_stack = SmartSearchFrontendStack(app,
+                               f"{project_name}FrontendStack",
+                               project_name=project_name,
+                               semantic_search_api=semantic_search_stack.semantic_search_api,
+                               summarize_api = infra_stack.summarize_api,
+                               env=AWS_ENV,
+                               description="Front end for Smart search",
+                              )                         
+frontend_stack.add_dependency(semantic_search_stack)
+
+# # add tags
+# cdk.Tags.of(infra_stack).add('CNRP/PRJ', project_name)
+# cdk.Tags.of(semantic_search_stack).add('CNRP/PRJ', project_name)
+# cdk.Tags.of(frontend_stack).add('CNRP/PRJ', project_name)
 app.synth()

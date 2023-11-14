@@ -38,23 +38,25 @@ class KnowledgeVectorDbInfra(Construct):
                   value=self._open_search_service.domain_endpoint)
 
     cdk.CfnOutput(self, 'OPSHostEndpoint', value=self.domain_endpoint, export_name='OPSHostEndpoint')
-    cdk.CfnOutput(self, 'OPSDashboardURL', value=f"{self.domain_endpoint}/_dashboards/", export_name='OPSDashboardURL')
+    cdk.CfnOutput(self, 'OPSDashboard', value=f"{self.domain_endpoint}/_dashboards/", export_name='OPSDashboard')
 
   def _create_secret(self):
     """
     Create a master user-password pair which has 12 characters,
     """
-    master_user_secret = sm.Secret(self, "OSMasterUserSecret",
-                                         generate_secret_string=sm.SecretStringGenerator(
-                                             secret_string_template=json.dumps({"username": "admin"}),
-                                             generate_string_key="password",
-                                             # Master pass word must be at least 8 characters long and contain at least one uppercase letter,
-                                             # one lowercase letter, one number, and one special character.
-                                             password_length=12
-                                            ),
-                                         secret_name="OSMasterUserSecret"
-                                     )
+    master_user_secret = sm.Secret(self, 
+                                   "VectorDBMasterUserSecret",
+                                   generate_secret_string=sm.SecretStringGenerator(
+                                     secret_string_template=json.dumps({"username": "admin"}),
+                                     generate_string_key="password",
+                                     # Master pass word must be at least 8 characters long and contain at least one uppercase letter,
+                                     # one lowercase letter, one number, and one special character.
+                                     password_length=12,
+                                     ),
+                                    secret_name="VectorDBMasterUserCredentials",
+                                    )
     return master_user_secret
+  
   def _create_open_search_domain(self):
     """
     Create open search with a small instance type to host data and a removal_policy of DESTROY. Please change the params if necessary.

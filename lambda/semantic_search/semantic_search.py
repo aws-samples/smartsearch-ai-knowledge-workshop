@@ -76,7 +76,7 @@ class OpenSearchClient(object):
 
         sm_client = boto3_session.client(service_name="secretsmanager")
         host = _get_string_from_env('host', '')
-        master_user = sm_client.get_secret_value(SecretId='opensearch-master-user')['SecretString']
+        master_user = sm_client.get_secret_value(SecretId='VectorDBMasterUserSecret')['SecretString']
 
         user_data = json.loads(master_user)
         username = user_data.get('username')
