@@ -14,6 +14,7 @@ from aws_cdk import (
 from lib.smart_search_infra_stack import SmartSearchInfraStack
 from lib.semantic_search_api_stack import SemanticSearchLambdaStack
 from lib.smart_search_frontend_stack import SmartSearchFrontendStack
+from lib.utils import get_value
 
 
 app = App()
@@ -40,18 +41,21 @@ semantic_search_stack = SemanticSearchLambdaStack(app,
                                     )
 semantic_search_stack.add_dependency(infra_stack)
 
+summarize_api = get_value("SummarizeApi")
+semantic_search_api = get_value("SemanticSearchApi")
+
 frontend_stack = SmartSearchFrontendStack(app,
                                f"{project_name}FrontendStack",
                                project_name=project_name,
-                               semantic_search_api=semantic_search_stack.semantic_search_api,
-                               summarize_api = infra_stack.summarize_api,
+                               semantic_search_api=summarize_api,
+                               summarize_api = summarize_api,
                                env=AWS_ENV,
                                description="Front end for Smart search",
                               )                         
 frontend_stack.add_dependency(semantic_search_stack)
 
 # # add tags
-# cdk.Tags.of(infra_stack).add('CNRP/PRJ', project_name)
-# cdk.Tags.of(semantic_search_stack).add('CNRP/PRJ', project_name)
-# cdk.Tags.of(frontend_stack).add('CNRP/PRJ', project_name)
+cdk.Tags.of(infra_stack).add('CNRP/PRJ', project_name)
+cdk.Tags.of(semantic_search_stack).add('CNRP/PRJ', project_name)
+cdk.Tags.of(frontend_stack).add('CNRP/PRJ', project_name)
 app.synth()

@@ -1,4 +1,6 @@
 #!/bin/bash
 cd ../front-end
-npm install
+rm -rf build/
+rm -rf node_modules/
+npm ci
 npm run build

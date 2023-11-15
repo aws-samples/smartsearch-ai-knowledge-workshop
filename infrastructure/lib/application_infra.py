@@ -11,9 +11,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_iam as iam,
     aws_elasticloadbalancingv2 as elbv2,
-    App,
     CfnOutput,
-    Stack,
 )
 from constructs import Construct
 
@@ -35,8 +33,6 @@ class ApplicationInfra(Construct):
 
         ec2_role = self._create_ec2_role()
         image_id = self._get_dl_image_id(scope)
-
-        print(f"The gpu image id we used for in LLM: {image_id}")
 
         # creat load balance
         lb = elbv2.ApplicationLoadBalancer(
@@ -96,7 +92,7 @@ class ApplicationInfra(Construct):
         listener.connections.allow_default_port_from_any_ipv4("Open to the world")
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
         
-        CfnOutput(self, "LoadBalancer", export_name="LLMLoadBalancer", value=f'{lb.load_balancer_dns_name}:1080/summarize')
+        CfnOutput(self, "LoadBalancer", export_name="SummarizeApi", value=f'{lb.load_balancer_dns_name}:1080/summarize')
 
     def _create_ec2_role(self):
         # EC2 IAM Roles
@@ -150,8 +146,7 @@ class ApplicationInfra(Construct):
         """
         gpu_image = ec2.LookupMachineImage(
             name="Deep Learning AMI GPU PyTorch 1.13.1 (Amazon Linux 2)*",
-            # name="al2023-ami-2023*",
-            name="al2023-ami-2023*x86_64",
+            # name="al2023-ami-2023*x86_64",
             owners=["amazon"],
             windows=False,
         )
@@ -160,7 +155,7 @@ class ApplicationInfra(Construct):
 
     @property
     def summarize_api(self):
-        return self._summarize_api
+        return cdk.Fn.import_value('LLMLoadBalancer')
 
 class VPCInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):

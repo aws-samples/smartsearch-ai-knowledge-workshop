@@ -6,12 +6,12 @@ import aws_cdk as cdk
 
 from aws_cdk import (
     Stack,
-    App,
     Duration,
     aws_lambda as _lambda,
     aws_apigateway as apigw,
     aws_secretsmanager as sm,
     aws_iam as iam,
+    CfnOutput
 )
 
 
@@ -34,12 +34,9 @@ class SemanticSearchLambdaStack(Stack):
             secret_name = "OpenSearchHostURL"
         )
 
-        # get value from opensearch stack
-        host = "https://" + search_engine + "/"
+        semantic_lambda = self._create_semantic_lambda(id=construct_id, host=search_engine, em_endpoint_name=em_endpoint_name)
 
-        semantic_lambda = self._create_semantic_lambda(id=construct_id, host=host, em_endpoint_name=em_endpoint_name)
-
-        self._create_apigw(semantic_lambda=semantic_lambda)
+        self._create_apigw(region=kwargs['env'].region, semantic_lambda=semantic_lambda)
 
 
     def _create_semantic_lambda(self, id, host, em_endpoint_name):
@@ -99,16 +96,14 @@ class SemanticSearchLambdaStack(Stack):
 
         return semantic_lambda
 
-    def _create_apigw(self, semantic_lambda):
+    def _create_apigw(self, region, semantic_lambda):
 
         # api gateway resource
         self._api = apigw.RestApi(self, 
                                   'semantic-search-api',
                                   endpoint_types=[apigw.EndpointType.REGIONAL],
                                   )
-
-        # print(f'rest_api_name: {self._api.rest_api_name}\n rest_api_id: {self._api.rest_api_id}\n domain_name: {self._api.domain_name}\n to_string: {self._api.to_string()}\n')
-        
+                
         semantic_lambda_root = self._api.root.add_resource(
             'smart_search',
             default_cors_preflight_options=apigw.CorsOptions(
@@ -142,8 +137,9 @@ class SemanticSearchLambdaStack(Stack):
             ]
         )
 
-    @property
-    def semantic_search_api(self):
-        return self._api.rest_api_id
+        CfnOutput(self, 
+                  "SemanticSearchApi", 
+                  export_name="SemanticSearchApi", 
+                  value=f'https://{self._api.rest_api_id}.execute-api.{region}.amazonaws.com/prod/smart_search')
 
 

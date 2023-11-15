@@ -23,8 +23,7 @@ class FrontEndInfra(Construct):
         self, scope: Construct, id: str, main_api: str, summarize_api: str, **kwargs
     ):
         super().__init__(scope, id)
-        print(f'search api: {main_api}, summarize api: {summarize_api}')
-
+        
         # prepare the static web pages
         self._prepare_static_web_pages(main_api, summarize_api)
 
@@ -63,6 +62,7 @@ class FrontEndInfra(Construct):
                 ignore_public_acls=True,
                 restrict_public_buckets=True,
             ),
+            removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
         # deploy to s3 website_bucket

@@ -3,3 +3,4 @@ constructs>=10.0.0
 aws-cdk.aws_apigatewayv2_integrations_alpha
 aws-cdk.aws_apigatewayv2_alpha
 cdk-ecr-deployment
+boto3

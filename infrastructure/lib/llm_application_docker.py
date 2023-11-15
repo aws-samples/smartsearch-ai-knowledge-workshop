@@ -44,8 +44,6 @@ class LLMApplicationDockerInfra(Construct):
             dest=ecrdeploy.DockerImageName(self._image_uri)
         )
 
-        print(f'LLM image {self._image_uri} uploaded!')
-
         cdk.CfnOutput(
             self, f"LLMAppDockerImage", value=self._image_uri)
         
