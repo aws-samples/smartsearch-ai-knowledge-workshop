@@ -24,11 +24,11 @@ class SmartSearchFrontendStack(Stack):
     def __init__(self, app: Construct, id: str, project_name:str, semantic_search_api:str, summarize_api:str, **kwargs) -> None:
         super().__init__(app, id, **kwargs)
 
-        # front_end_infra = FrontEndInfra(
-        #     self,
-        #     f"{project_name}Frontend",
-        #     main_api=semantic_search_api,
-        #     summarize_api=summarize_api,
-        #     **kwargs,
-        # )
+        front_end_infra = FrontEndInfra(
+            self,
+            f"{project_name}Frontend",
+            main_api=semantic_search_api,
+            summarize_api=summarize_api,
+            **kwargs,
+        )
 

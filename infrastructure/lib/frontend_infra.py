@@ -63,6 +63,7 @@ class FrontEndInfra(Construct):
                 restrict_public_buckets=True,
             ),
             removal_policy=cdk.RemovalPolicy.DESTROY,
+            auto_delete_objects=True
         )
 
         # deploy to s3 website_bucket
