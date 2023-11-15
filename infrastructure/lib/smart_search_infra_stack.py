@@ -54,10 +54,6 @@ class SmartSearchInfraStack(Stack):
         return self._opensearch_infra.domain_endpoint
 
     @property
-    def summarize_api(self):
-        return self._application_infra.summarize_api
-
-    @property
     def em_endpoint_name(self):
         return self._em_inference_infra.endpoint_name
 

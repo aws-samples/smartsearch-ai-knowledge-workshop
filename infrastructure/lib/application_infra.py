@@ -92,7 +92,7 @@ class ApplicationInfra(Construct):
         listener.connections.allow_default_port_from_any_ipv4("Open to the world")
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
         
-        CfnOutput(self, "LoadBalancer", export_name="SummarizeApi", value=f'{lb.load_balancer_dns_name}:1080/summarize')
+        CfnOutput(self, "LoadBalancer", export_name="SummarizeApi", value=f'http://{lb.load_balancer_dns_name}:1080/summarize')
 
     def _create_ec2_role(self):
         # EC2 IAM Roles
@@ -153,9 +153,6 @@ class ApplicationInfra(Construct):
 
         return gpu_image.get_image(scope).image_id
 
-    @property
-    def summarize_api(self):
-        return cdk.Fn.import_value('LLMLoadBalancer')
 
 class VPCInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):
