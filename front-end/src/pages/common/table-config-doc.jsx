@@ -9,7 +9,7 @@ const VISIBLE_CONTENT_OPTIONS = [
     options: [
       { id: "id", label: "ID" },
       { id: "question", label: "Question" },
-      { id: "answers", label: "Analysis and processing" },
+      { id: "answers", label: "Answers" },
       { id: "upload_date", label: "Update time" },
     ],
   },

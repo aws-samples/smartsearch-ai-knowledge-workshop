@@ -47,6 +47,7 @@ This deployment requires the following available in your AWS account
 **Required resources:**
 - AWS S3 bucket
 - AWS AOS
+- AWS SecretsManager
 - AWS VPC
 - AWS IAM role with specific permissions
 - AWS SageMaker
@@ -71,7 +72,7 @@ For this example, you can try with 'workshop' profile by the following command::
 When it's done, the command prompt reappears. You can go to the AWS CloudFormation console and see that it now lists `RAGSearchWithLLMInfraStack`, `RAGSearchWithLLMSemanticSearchLambdaStack` and `RAGSearchWithLLMFrontendStack`. 
 
 ## Ingest sample data
-You need to ingest some data to play with this solution. We provide a simple list of question-answer pairs. You can ingest with SageMaker Notebook and upload folder into it. And follow the instructions in `data/data_ingestion.ipynb` and run.
+You need to ingest some data to play with this solution. We provide a simple list of question-answer pairs. You can ingest with SageMaker Notebook and upload whole `data` folder into this notebook instance. Please follow the instructions in `data/data_ingestion.ipynb` to feed data into AWS AOS.
 
 ## Test
 After deployment and data ingestion, you can get an url of from `RAGSearchWithLLMFrontendStack` stack in output cdk.
