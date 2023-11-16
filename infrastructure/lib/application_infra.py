@@ -43,7 +43,7 @@ class ApplicationInfra(Construct):
             load_balancer_name="LLM-ALB",
         )
 
-        self._summarize_api = f"{lb.load_balancer_dns_name}:1080/summarize"
+        self._summarize_api = f"{lb.load_balancer_dns_name}/summarize"
 
         # creat asg
         asg: autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
@@ -83,7 +83,7 @@ class ApplicationInfra(Construct):
 
         # added listener
         listener = lb.add_listener(
-            "Listener", port=1080, protocol=elbv2.ApplicationProtocol.HTTP
+            "Listener", port=80, protocol=elbv2.ApplicationProtocol.HTTP
         )
         listener.add_targets(
             "Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg]
@@ -92,7 +92,7 @@ class ApplicationInfra(Construct):
         listener.connections.allow_default_port_from_any_ipv4("Open to the world")
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
         
-        CfnOutput(self, "LoadBalancer", export_name="SummarizeApi", value=f'http://{lb.load_balancer_dns_name}:1080/summarize')
+        CfnOutput(self, "LoadBalancer", export_name="SummarizeApi", value=f'http://{lb.load_balancer_dns_name}/summarize')
 
     def _create_ec2_role(self):
         # EC2 IAM Roles
