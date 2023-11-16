@@ -9,21 +9,23 @@ except ImportError:
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deployment
 from aws_cdk import aws_cloudfront as cloudfront
-from aws_cdk import  aws_cloudfront_origins as origins
+from aws_cdk import aws_cloudfront_origins as origins
 import aws_cdk.aws_iam as iam
 
 DIRNAME = os.path.dirname(__file__)
+
 
 class FrontEndInfra(Construct):
     """
     Create front end infra with s3 to hold static web page.
     Cloudfront to be accessed in front of s3.
     """
+
     def __init__(
         self, scope: Construct, id: str, main_api: str, summarize_api: str, **kwargs
     ):
         super().__init__(scope, id)
-        
+
         # prepare the static web pages
         self._prepare_static_web_pages(main_api, summarize_api)
 
@@ -37,13 +39,13 @@ class FrontEndInfra(Construct):
         cdk.CfnOutput(
             self,
             "SmartSearchUrl",
-            value=f'https://{distribution.distribution_domain_name}',
+            value=f"https://{distribution.distribution_domain_name}",
             description="Smart search url",
         )
-    
+
     def _prepare_static_web_pages(self, main_api, summarize_api):
-        build_static_web_cmd = f"""export REACT_APP_MAIN_API={main_api} |
-        				export REACT_APP_SUMMARIZE_API={summarize_api} |
+        build_static_web_cmd = f"""export REACT_APP_MAIN_API={main_api}
+        				export REACT_APP_SUMMARIZE_API={summarize_api}
 						./build-s3-dist.sh
                 """
         os.system(build_static_web_cmd)
@@ -53,7 +55,7 @@ class FrontEndInfra(Construct):
         s3_bucket_name = "smart-search-static-website-bucket"
         website_bucket = s3.Bucket(
             self,
-            id=f'{prefix}StaticWebsiteBucket',
+            id=f"{prefix}StaticWebsiteBucket",
             bucket_name=s3_bucket_name,
             website_index_document="index.html",
             block_public_access=s3.BlockPublicAccess(
@@ -63,20 +65,24 @@ class FrontEndInfra(Construct):
                 restrict_public_buckets=True,
             ),
             removal_policy=cdk.RemovalPolicy.DESTROY,
-            auto_delete_objects=True
+            auto_delete_objects=True,
         )
 
         # deploy to s3 website_bucket
         models_deployment = s3_deployment.BucketDeployment(
             self,
             "Models",
-            sources=[s3_deployment.Source.asset(os.path.join(DIRNAME, "../../front-end/build"))],
-            destination_bucket=website_bucket
+            sources=[
+                s3_deployment.Source.asset(
+                    os.path.join(DIRNAME, "../../front-end/build")
+                )
+            ],
+            destination_bucket=website_bucket,
         )
         return website_bucket
 
     def _create_cloudfront_distribution(self, website_bucket):
-        distribution:cloudfront.CloudFrontWebDistribution = cloudfront.CloudFrontWebDistribution(
+        distribution: cloudfront.CloudFrontWebDistribution = cloudfront.CloudFrontWebDistribution(
             self,
             "StaticWebsiteDistribution",
             origin_configs=[
@@ -95,9 +101,9 @@ class FrontEndInfra(Construct):
                     ],
                 ),
             ],
-            default_root_object="index.html"
+            default_root_object="index.html",
         )
-    
+
         # add access control for frontend
         cfn_origin_access_control = cloudfront.CfnOriginAccessControl(
             self,
@@ -117,10 +123,10 @@ class FrontEndInfra(Construct):
         )
 
         overriden_distribution.add_property_override(
-            'DistributionConfig.Origins.0.OriginAccessControlId',
-            cfn_origin_access_control.get_att('Id'),
+            "DistributionConfig.Origins.0.OriginAccessControlId",
+            cfn_origin_access_control.get_att("Id"),
         )
-        
+
         return distribution
 
     def _grant_cloudfront_access(self, distribution, website_bucket):
