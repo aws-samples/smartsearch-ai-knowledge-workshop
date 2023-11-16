@@ -11,7 +11,6 @@ from flask_cors import CORS
 
 tokenizer = AutoTokenizer.from_pretrained("chatglm-6b", trust_remote_code=True)
 model = AutoModel.from_pretrained("chatglm-6b", device_map='auto', trust_remote_code=True)
-# model = AutoModel.from_pretrained("chatglm-6b", trust_remote_code=True).half().cuda()
 
 def preprocess(text):
     text = text.replace("\n", "\\n").replace("\t", "\\t")
@@ -50,7 +49,6 @@ prompt_template_llm = """您作为一个车间维修的资深专家，根据客�
 """
 
 def preprocess_qa(question, answers):
-    # default 8192 token
     trunked = "。\n".join(answers)[:5000-len(prompt_template_llm)-len(question)]
     return prompt_template_llm.format(question=question, answers=trunked)
 
@@ -94,6 +92,9 @@ def _invalid(list_value:list[str], max_len:int, max_per_item:int):
 
 @app.route('/summarize', methods=['POST'])
 def summarize_stream():
+    """
+    Do the summarization from input answers and streams out the response.
+    """
     request_data = request.get_json()
 
     question_max_len = _get_int_from_env('question_max_len', 200)
@@ -112,19 +113,16 @@ def summarize_stream():
         return _bad_request(f'answers({answers}) len is not correct. Length should be [1, {answers_max_len}], each answer should be[1, {max_len_per_answer}]')
 
     stream_input_text = preprocess_qa(question, answers)
+    
+    # generate streaming response
     def summarize_generate():
         history = []
         response = ""
         pre_response = None
-        for idx, (response, history) in enumerate(model.stream_chat(tokenizer, stream_input_text, temperature=temperature, history=history, max_length=6000)):
-            # print(f'{idx}: {repr(response)}////{response}')
-            print(f'{idx}: {response}')
+        for idx, (response, history) in enumerate(model.stream_chat(tokenizer, stream_input_text, temperature=temperature, history=history, max_length=6000)):            
             if pre_response is not None:
                 word = response[len(pre_response):]
                 pre_response = response
-                print(f'{word} for response: {response}, pre: {pre_response}')
-                print(f'history {history}')
-                print(f'history[-1] {history[-1]}')
                 yield word.encode('utf-8')
             else:
                 pre_response = response
@@ -135,6 +133,9 @@ def summarize_stream():
 # define a check api
 @app.route('/tweet/<string:words>', methods=['GET'])
 def tweet(words):
+    """
+    A quick check of the application status
+    """
     response = predict_fn(words)
     return json.dumps(
         {
