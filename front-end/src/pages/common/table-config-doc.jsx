@@ -35,16 +35,7 @@ export const PAGE_SIZE_OPTIONS = [
 
 export const DEFAULT_PREFERENCES = {
   pageSize: 50,
-  visibleContent: [
-    "question",
-    "answers",
-    "machinetypename",
-    "linename",
-    "manufacturing_process_number",
-    "reply_upload_file",
-    "upload_date",
-    "problemid",
-  ],
+  visibleContent: ["question", "answers"],
   wrapLines: true,
 };
 
