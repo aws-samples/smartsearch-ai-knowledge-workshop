@@ -41,26 +41,6 @@ def predict_fn(words):
 app = Flask(__name__)
 cors = CORS(app, resources={r"/summarize": {"origins": "*"}})
 
-# define urls
-@app.route('/', methods=['GET'])
-def hello():
-    response = predict_fn('Hello!')
-    return json.dumps(
-        {
-            'answer': response
-        }
-    )
-
-
-@app.route('/tweet/<string:words>', methods=['GET'])
-def tweet(words):
-    response = predict_fn(words)
-    return json.dumps(
-        {
-            'answer': response
-        }
-    )
-
 
 prompt_template_llm = """您作为一个车间维修的资深专家，根据客户的在问题```{question}```，请基于以下三个反单引号（```）所提供的已知信息和答案，给出简洁专业的回答，并告知是依据哪些信息来进行回答的。如果无法从中得到答案，请说"没有提供足够的相关信息"，不允许在答案中添加编造成分，答案请使用中文。
 已知信息和答案:
@@ -111,6 +91,7 @@ def _invalid(list_value:list[str], max_len:int, max_per_item:int):
             return True
     return False
 
+
 @app.route('/summarize', methods=['POST'])
 def summarize_stream():
     request_data = request.get_json()
@@ -151,27 +132,12 @@ def summarize_stream():
 
     return app.response_class(summarize_generate())
 
-
-@app.route('/tweet_stream/<string:words>', methods=['GET'])
-def tweet_stream(words):
-    stream_input_text = preprocess(words)
-
-    def generate():
-        history = []
-        response = ""
-        pre_response = None
-        for idx, (response, history) in enumerate(model.stream_chat(tokenizer, stream_input_text, history=history)):
-            # print(f'{idx}: {repr(response)}////{response}')
-            print(f'{idx}: {response}')
-            if pre_response is not None:
-                word = response[len(pre_response):]
-                pre_response = response
-                print(f'{word} for response: {response}, pre: {pre_response}')
-                print(f'history {history}')
-                print(f'history[-1] {history[-1]}')
-                yield word.encode('utf-8')
-            else:
-                pre_response = response
-                yield response.encode('utf-8')
-
-    return app.response_class(generate())
+# define a check api
+@app.route('/tweet/<string:words>', methods=['GET'])
+def tweet(words):
+    response = predict_fn(words)
+    return json.dumps(
+        {
+            'answer': response
+        }
+    )
