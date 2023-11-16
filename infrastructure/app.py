@@ -45,9 +45,6 @@ semantic_search_stack.add_dependency(infra_stack)
 summarize_api = get_value("SummarizeApi")
 semantic_search_api = get_value("SemanticSearchApi")
 
-print(f"summarize_api: {summarize_api}")
-print(f"semantic_search_api: {semantic_search_api}")
-
 frontend_stack = SmartSearchFrontendStack(
     app,
     f"{project_name}FrontendStack",
