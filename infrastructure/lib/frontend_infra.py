@@ -6,11 +6,21 @@ try:
     from aws_cdk import core as cdk
 except ImportError:
     import aws_cdk as cdk
+
+from aws_cdk import (
+    aws_s3 as s3,
+    aws_s3_deployment as s3_deployment,
+    aws_cloudfront as cloudfront,
+    aws_cloudfront_origins as origins,
+    aws_iam as iam,
+)
+
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deployment
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cloudfront_origins as origins
 import aws_cdk.aws_iam as iam
+
 
 DIRNAME = os.path.dirname(__file__)
 
@@ -137,7 +147,6 @@ class FrontEndInfra(Construct):
                 actions=["s3:GetObject"],
                 resources=[f"{website_bucket.bucket_arn}/*"],
                 principals=[iam.ServicePrincipal("cloudfront.amazonaws.com")],
-                # principals=[iam.ArnPrincipal(f"arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity {distribution.distribution_id}")],
                 sid="PolicyForCloudFrontPrivateContent",
                 conditions={
                     "StringEquals": {
@@ -146,3 +155,4 @@ class FrontEndInfra(Construct):
                 },
             )
         )
+

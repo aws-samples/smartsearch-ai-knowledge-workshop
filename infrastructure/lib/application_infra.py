@@ -10,8 +10,11 @@ from aws_cdk import (
     aws_autoscaling as autoscaling,
     aws_ec2 as ec2,
     aws_iam as iam,
+    aws_apigateway as apigw,
     aws_elasticloadbalancingv2 as elbv2,
     CfnOutput,
+    aws_certificatemanager as cm,
+    aws_acmpca as acmpca,
 )
 from constructs import Construct
 
@@ -43,7 +46,7 @@ class ApplicationInfra(Construct):
             load_balancer_name="LLM-ALB",
         )
 
-        self._summarize_api = f"{lb.load_balancer_dns_name}/summarize"
+        self._summarize_api = f"http://{lb.load_balancer_dns_name}/summarize"
 
         # creat asg
         asg: autoscaling.AutoScalingGroup = autoscaling.AutoScalingGroup(
@@ -52,7 +55,7 @@ class ApplicationInfra(Construct):
             vpc=vpc_infra.vpc,
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2,
-                # ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM ##TODO
+                # ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM
             ),
             ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
             machine_image=ec2.MachineImage.generic_linux(
@@ -81,18 +84,23 @@ class ApplicationInfra(Construct):
 
         cdk.Tags.of(asg).add("Patch Group", "AccountGuardian-PatchGroup-DO-NOT-DELETE")
 
+        # cert = self._create_cert(id)
         # added listener
         listener = lb.add_listener(
             "Listener", port=80, protocol=elbv2.ApplicationProtocol.HTTP
         )
+        
         listener.add_targets(
             "Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg]
         )
-        ## todo change
-        listener.connections.allow_default_port_from_any_ipv4("Open to the world")
-        asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
         
-        CfnOutput(self, "LoadBalancer", export_name="SummarizeApi", value=f'http://{lb.load_balancer_dns_name}/summarize')
+        listener.connections.allow_default_port_from_any_ipv4("Open to the world")
+        # listener.connections.allow_internally
+        asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
+    
+        # create apigateway in front to alb
+        self._create_apigw(region, self._summarize_api)
+
 
     def _create_ec2_role(self):
         # EC2 IAM Roles
@@ -153,6 +161,77 @@ class ApplicationInfra(Construct):
 
         return gpu_image.get_image(scope).image_id
 
+    def _create_cert(self, prefix):
+        ca_arn = "arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/023077d8-2bfa-4eb0-8f22-05c96deade77"
+        cert = cm.PrivateCertificate(self, f"{prefix}PrivateCertificate",
+            domain_name="*.cloudfront.net", # optional
+            certificate_authority=acmpca.CertificateAuthority.from_certificate_authority_arn(self, 
+                                                                                                "CA", 
+                                                                                                ca_arn)
+        )
+        return cert
+
+    def _create_apigw(self, region, url):
+        # api gateway resource
+        self._api = apigw.RestApi(
+            self,
+            "summarize-api",
+            endpoint_types=[apigw.EndpointType.REGIONAL],
+        )
+
+        summarize_root = self._api.root.add_resource(
+            "summarize",
+            default_cors_preflight_options=apigw.CorsOptions(
+                allow_methods=["POST", "OPTIONS"], 
+                allow_origins=apigw.Cors.ALL_ORIGINS
+            ),
+        )
+
+        summarize_api_integration = apigw.HttpIntegration(
+            url,
+            http_method="POST",
+            options=apigw.IntegrationOptions(
+                # timeout=cdk.Duration.seconds(60),
+                passthrough_behavior=apigw.PassthroughBehavior.WHEN_NO_MATCH,
+                # passthrough_behavior=apigw.PassthroughBehavior.WHEN_NO_TEMPLATES,
+                integration_responses=[apigw.IntegrationResponse(
+                                    status_code="200",
+                                    response_templates={
+                                        "application/json": ""
+                                     },
+                                    )
+                                    ],
+                # request_templates={
+                #         "application/json": "{ \"statusCode\": 200 }"
+                # }
+            ),
+            proxy=False
+        )
+
+        summarize_root.add_method(
+            "POST",
+            summarize_api_integration,
+            method_responses=[
+                apigw.MethodResponse(
+                    status_code="200",
+                    response_parameters={
+                        "method.response.header.Access-Control-Allow-Origin": True,
+                        "method.response.header.Content-Type": True,
+                    },
+                    response_models={
+                        "application/json": apigw.Model.EMPTY_MODEL
+                    }
+                )
+            ],
+        )
+
+        CfnOutput(
+            self,
+            "SummarizeApi",
+            export_name="SummarizeApi",
+            value=f"https://{self._api.rest_api_id}.execute-api.{region}.amazonaws.com/prod/summarize",
+        )
+
 
 class VPCInfra(Construct):
     def __init__(self, scope: Construct, id: str, **kwargs):
@@ -195,3 +274,4 @@ class VPCInfra(Construct):
     @property
     def vpc_endpoint(self):
         return self._vpc.endpoint_id
+
