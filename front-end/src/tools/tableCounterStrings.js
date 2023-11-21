@@ -19,7 +19,8 @@ export const getServerFilterCounterText = (
 ) => {
   const count =
     pagesCount > 1 ? `${pageSize * (pagesCount - 1)}+` : items.length + "";
-  return `${count} 条匹配`;
+  return count > 1 ? `${count} matchs` : `${count} match`;
 };
 
-export const getFilterCounterText = (count) => `${count} 条匹配`;
+export const getFilterCounterText = (count) =>
+  count > 1 ? `${count} matchs` : `${count} match`;
