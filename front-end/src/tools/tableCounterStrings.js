@@ -19,8 +19,8 @@ export const getServerFilterCounterText = (
 ) => {
   const count =
     pagesCount > 1 ? `${pageSize * (pagesCount - 1)}+` : items.length + "";
-  return count > 1 ? `${count} matchs` : `${count} match`;
+  return count > 1 ? `${count} matches` : `${count} match`;
 };
 
 export const getFilterCounterText = (count) =>
-  count > 1 ? `${count} matchs` : `${count} match`;
+  count > 1 ? `${count} matches` : `${count} match`;

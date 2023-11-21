@@ -24,7 +24,7 @@ import { useColumnWidths } from "../../hooks/use-column-widths";
 import { useLocalStorage } from "../../hooks/localStorage";
 import MainSearchHeader from "./MainSearchHeader";
 import FullPageHeader from "./FullPageHeader";
-import { POST_HEADERS, SUMMARIZE_API } from "../../tools/constants";
+import { HEADERS, SUMMARIZE_API } from "../../tools/constants";
 
 const COLUMN_DEFINITIONS = addColumnSortLabels([
   {
@@ -148,7 +148,7 @@ function TableContent({ distributions, updateTools }) {
       setIsFilterLoading(true);
       const response = await fetch(requestApi, {
         method: "POST",
-        headers: POST_HEADERS,
+        headers: HEADERS,
         body: JSON.stringify(postData),
         signal,
       });
