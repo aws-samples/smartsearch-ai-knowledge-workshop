@@ -23,6 +23,7 @@ class ApplicationInfra(Construct):
     """
     Create llm web ec2 instance and alb and a load balance before ec2 asg
     """
+
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id)
         region = kwargs["env"].region
@@ -54,7 +55,8 @@ class ApplicationInfra(Construct):
             "LLMASG",
             vpc=vpc_infra.vpc,
             instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.G4DN, ec2.InstanceSize.XLARGE2,
+                ec2.InstanceClass.G4DN,
+                ec2.InstanceSize.XLARGE2,
                 # ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM
             ),
             ##todo for gpu? machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
@@ -89,18 +91,17 @@ class ApplicationInfra(Construct):
         listener = lb.add_listener(
             "Listener", port=80, protocol=elbv2.ApplicationProtocol.HTTP
         )
-        
+
         listener.add_targets(
             "Target", port=5000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[asg]
         )
-        
+
         listener.connections.allow_default_port_from_any_ipv4("Open to the world")
         # listener.connections.allow_internally
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
-    
+
         # create apigateway in front to alb
         self._create_apigw(region, self._summarize_api)
-
 
     def _create_ec2_role(self):
         # EC2 IAM Roles
@@ -163,11 +164,13 @@ class ApplicationInfra(Construct):
 
     def _create_cert(self, prefix):
         ca_arn = "arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/023077d8-2bfa-4eb0-8f22-05c96deade77"
-        cert = cm.PrivateCertificate(self, f"{prefix}PrivateCertificate",
-            domain_name="*.cloudfront.net", # optional
-            certificate_authority=acmpca.CertificateAuthority.from_certificate_authority_arn(self, 
-                                                                                                "CA", 
-                                                                                                ca_arn)
+        cert = cm.PrivateCertificate(
+            self,
+            f"{prefix}PrivateCertificate",
+            domain_name="*.cloudfront.net",  # optional
+            certificate_authority=acmpca.CertificateAuthority.from_certificate_authority_arn(
+                self, "CA", ca_arn
+            ),
         )
         return cert
 
@@ -182,8 +185,16 @@ class ApplicationInfra(Construct):
         summarize_root = self._api.root.add_resource(
             "summarize",
             default_cors_preflight_options=apigw.CorsOptions(
-                allow_methods=["POST", "OPTIONS"], 
-                allow_origins=apigw.Cors.ALL_ORIGINS
+                allow_methods=["POST", "OPTIONS"],
+                allow_origins=apigw.Cors.ALL_ORIGINS,
+                allow_credentials=True,
+                allow_headers=[
+                    "Content-Type",
+                    "X-Amz-Date",
+                    "Authorization",
+                    "X-Api-Key",
+                    "X-Amz-Security-Token",
+                ],
             ),
         )
 
@@ -194,18 +205,17 @@ class ApplicationInfra(Construct):
                 # timeout=cdk.Duration.seconds(60),
                 passthrough_behavior=apigw.PassthroughBehavior.WHEN_NO_MATCH,
                 # passthrough_behavior=apigw.PassthroughBehavior.WHEN_NO_TEMPLATES,
-                integration_responses=[apigw.IntegrationResponse(
-                                    status_code="200",
-                                    response_templates={
-                                        "application/json": ""
-                                     },
-                                    )
-                                    ],
+                integration_responses=[
+                    apigw.IntegrationResponse(
+                        status_code="200",
+                        response_templates={"application/json": ""},
+                    )
+                ],
                 # request_templates={
                 #         "application/json": "{ \"statusCode\": 200 }"
                 # }
             ),
-            proxy=False
+            proxy=False,
         )
 
         summarize_root.add_method(
@@ -218,9 +228,7 @@ class ApplicationInfra(Construct):
                         "method.response.header.Access-Control-Allow-Origin": True,
                         "method.response.header.Content-Type": True,
                     },
-                    response_models={
-                        "application/json": apigw.Model.EMPTY_MODEL
-                    }
+                    response_models={"application/json": apigw.Model.EMPTY_MODEL},
                 )
             ],
         )
@@ -274,4 +282,3 @@ class VPCInfra(Construct):
     @property
     def vpc_endpoint(self):
         return self._vpc.endpoint_id
-

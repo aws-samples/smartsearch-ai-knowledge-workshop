@@ -117,7 +117,16 @@ class SemanticSearchLambdaStack(Stack):
         semantic_lambda_root = self._api.root.add_resource(
             "smart_search",
             default_cors_preflight_options=apigw.CorsOptions(
-                allow_methods=["POST", "OPTIONS"], allow_origins=apigw.Cors.ALL_ORIGINS
+                allow_methods=["POST", "OPTIONS"],
+                allow_origins=apigw.Cors.ALL_ORIGINS,
+                allow_credentials=True,
+                allow_headers=[
+                    "Content-Type",
+                    "X-Amz-Date",
+                    "Authorization",
+                    "X-Api-Key",
+                    "X-Amz-Security-Token",
+                ],
             ),
         )
 
@@ -151,5 +160,5 @@ class SemanticSearchLambdaStack(Stack):
             self,
             "SemanticSearchApi",
             export_name="SemanticSearchApi",
-            value=f"https://{self._api.rest_api_id}.execute-api.{region}.amazonaws.com/prod/",
+            value=f"https://{self._api.rest_api_id}.execute-api.{region}.amazonaws.com/prod",
         )
