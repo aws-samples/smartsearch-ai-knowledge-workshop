@@ -13,8 +13,6 @@ from aws_cdk import (
     aws_apigateway as apigw,
     aws_elasticloadbalancingv2 as elbv2,
     CfnOutput,
-    aws_certificatemanager as cm,
-    aws_acmpca as acmpca,
 )
 from constructs import Construct
 
@@ -100,8 +98,7 @@ class ApplicationInfra(Construct):
         # listener.connections.allow_internally
         asg.scale_on_request_count("AModestLoad", target_requests_per_minute=60)
 
-        # create apigateway in front to alb
-        self._create_apigw(region, self._summarize_api)
+        CfnOutput(self, "SummarizeApi", export_name="SummarizeApi", value=f"{self._summarize_api}")
 
     def _create_ec2_role(self):
         # EC2 IAM Roles
@@ -161,84 +158,6 @@ class ApplicationInfra(Construct):
         )
 
         return gpu_image.get_image(scope).image_id
-
-    def _create_cert(self, prefix):
-        ca_arn = "arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/023077d8-2bfa-4eb0-8f22-05c96deade77"
-        cert = cm.PrivateCertificate(
-            self,
-            f"{prefix}PrivateCertificate",
-            domain_name="*.cloudfront.net",  # optional
-            certificate_authority=acmpca.CertificateAuthority.from_certificate_authority_arn(
-                self, "CA", ca_arn
-            ),
-        )
-        return cert
-
-    def _create_apigw(self, region, url):
-        # api gateway resource
-        self._api = apigw.RestApi(
-            self,
-            "summarize-api",
-            endpoint_types=[apigw.EndpointType.REGIONAL],
-        )
-
-        summarize_root = self._api.root.add_resource(
-            "summarize",
-            default_cors_preflight_options=apigw.CorsOptions(
-                allow_methods=["POST", "OPTIONS"],
-                allow_origins=apigw.Cors.ALL_ORIGINS,
-                allow_credentials=True,
-                allow_headers=[
-                    "Content-Type",
-                    "X-Amz-Date",
-                    "Authorization",
-                    "X-Api-Key",
-                    "X-Amz-Security-Token",
-                ],
-            ),
-        )
-
-        summarize_api_integration = apigw.HttpIntegration(
-            url,
-            http_method="POST",
-            options=apigw.IntegrationOptions(
-                # timeout=cdk.Duration.seconds(60),
-                passthrough_behavior=apigw.PassthroughBehavior.WHEN_NO_MATCH,
-                # passthrough_behavior=apigw.PassthroughBehavior.WHEN_NO_TEMPLATES,
-                integration_responses=[
-                    apigw.IntegrationResponse(
-                        status_code="200",
-                        response_templates={"application/json": ""},
-                    )
-                ],
-                # request_templates={
-                #         "application/json": "{ \"statusCode\": 200 }"
-                # }
-            ),
-            proxy=False,
-        )
-
-        summarize_root.add_method(
-            "POST",
-            summarize_api_integration,
-            method_responses=[
-                apigw.MethodResponse(
-                    status_code="200",
-                    response_parameters={
-                        "method.response.header.Access-Control-Allow-Origin": True,
-                        "method.response.header.Content-Type": True,
-                    },
-                    response_models={"application/json": apigw.Model.EMPTY_MODEL},
-                )
-            ],
-        )
-
-        CfnOutput(
-            self,
-            "SummarizeApi",
-            export_name="SummarizeApi",
-            value=f"https://{self._api.rest_api_id}.execute-api.{region}.amazonaws.com/prod/summarize",
-        )
 
 
 class VPCInfra(Construct):
