@@ -64,12 +64,14 @@ Now you need to install deployment dependencies.
   $ pip install -r requirements.txt
 ```
 
-For this example, you can try with 'workshop' profile by the following command::
-```
-  $ cdk deploy -all --require-approval never
+Then you can deploy by cdk with the following commands:
+```shell
+  $ cdk deploy RAGSearchWithLLMInfraStack --require-approval never
+  $ cdk deploy RAGSearchWithLLMSemanticSearchLambdaStack --require-approval never
+  $ cdk deploy RAGSearchWithLLMFrontendStack --require-approval never
 ```
 
-When it's done, the command prompt reappears. You can go to the AWS CloudFormation console and see that it now lists `RAGSearchWithLLMInfraStack`, `RAGSearchWithLLMSemanticSearchLambdaStack` and `RAGSearchWithLLMFrontendStack`. 
+After each command is done, the command prompt reappears. You can go to the AWS CloudFormation console and see that all three stacks: `RAGSearchWithLLMInfraStack`, `RAGSearchWithLLMSemanticSearchLambdaStack` and `RAGSearchWithLLMFrontendStack`. 
 
 ## Ingest sample data
 You need to ingest some data to play with this solution. We provide a simple list of question-answer pairs. You can ingest with SageMaker Notebook and upload whole `data` folder into this notebook instance. Please follow the instructions in `data/data_ingestion.ipynb` to feed data into AWS AOS.
@@ -87,7 +89,7 @@ RAGSearchWithLLMFrontendStack.RAGSearchWithLLMFrontendSmartSearchUrl*** = https:
 The solution can handle QA pairs for summarization. You can extend it if you have other requirements.
 
 ## Cleanup
-Please kick `cdk destroy -all` to clean up the whole environment in this path `infrastructure`.
+Please kick `cdk destroy --all` to clean up the whole environment in this path `infrastructure`.
 
 ## FAQ, known issues, additional considerations, and limitations
 N/A
