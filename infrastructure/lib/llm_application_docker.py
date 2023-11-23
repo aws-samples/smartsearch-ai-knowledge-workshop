@@ -34,7 +34,8 @@ class LLMApplicationDockerInfra(Construct):
             self, 
             "ECR",
             repository_name="llm_smart_search",
-            removal_policy=cdk.RemovalPolicy.DESTROY
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            auto_delete_images=True
         )
 
         self._image_uri = f'{repo.repository_uri}:latest'
