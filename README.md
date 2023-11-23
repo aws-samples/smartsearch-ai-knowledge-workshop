@@ -34,11 +34,39 @@ You need to
     $ sudo yum install docker
     $ sudo systemctl start docker
     ```
-* prepare a sagemaker notebook instance(ml.t3.xlarge) to build your own custom model
+  * make sure Python3 is installed in this instance
 
 ### Third-party tools
+#### Install Docker
+In this step, you will install Docker. This is required for the next step to build a LLM docker Image and push it to Amazon ECR.
+```shell
+sudo yum install docker
+sudo usermod -aG docker ${USER}
+sudo service docker start
+```
 
-* [Insomnia](https://insomnia.rest/) (Optional): You can post request with AWS IAM V4 Auth to test deployed API
+Verify that if you can run Docker commands without sudo.
+```shell
+sudo docker info
+```
+
+#### Install git
+To install git, you will need to kick below command:
+```shell
+sudo yum install -y git
+```
+
+Git LFS (Large File Storage) is an open-source Git extension developed by GitHub. It is created to handle files that are large and cannot be managed easily by Git itself. 
+We will need Git LFS to download LLM model, please refer to  [Install glf on AWS Ec2](https://stackoverflow.com/questions/71448559/git-large-file-storage-how-to-install-git-lfs-on-aws-ec2-linux-2-no-package)  to install git-lfs. Simply for most EC2 instance you can enter following commands in the notebook console, 
+```shell
+sudo amazon-linux-extras install epel -y 
+sudo yum-config-manager —enable epel
+sudo yum install git-lfs -y
+sudo git lfs install
+```
+
+### [Insomnia](https://insomnia.rest/) (Optional)
+You can post request with AWS IAM V4 Auth to test deployed API
 
 ### AWS account requirements
 
@@ -55,6 +83,13 @@ This deployment requires the following available in your AWS account
 Make sure your account can utility the above resources.
 
 ## Deploy the solution
+### Download a LLM model
+Please refer to [Downloading models Using Git](https://huggingface.co/docs/hub/models-downloading#using-git) and configure up your SSH user settings.
+```shell
+cd infrastructure/docker/
+git clone git@hf.co:THUDM/chatglm2-6b
+```
+### Prepare python env
 Before you deploy this solution, be sure you have right aws credentials configured.
 Now you need to install deployment dependencies.
 ```shell
