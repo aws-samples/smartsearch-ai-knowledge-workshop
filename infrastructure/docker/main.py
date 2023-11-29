@@ -41,8 +41,8 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/summarize": {"origins": "*"}})
 
 
-prompt_template_llm = """您作为一个车间维修的资深专家，根据客户的在问题```{question}```，请基于以下三个反单引号（```）所提供的已知信息和答案，给出简洁专业的回答，并告知是依据哪些信息来进行回答的。如果无法从中得到答案，请说"没有提供足够的相关信息"，不允许在答案中添加编造成分，答案请使用中文。
-已知信息和答案:
+prompt_template_llm = """As a sophisticated expert in Manufacturing, based on the customer's question ```{question}```, please provide a concise and professional analysis based on the known information and answers provided answers by the following triple backquotes (```) and tell what information the answer is based on. If you cannot give an analysis from it, please say "insufficient information provided". It is not allowed to add hallucinations to the analysis. Please note that the analysis must be provided in English.
+Known information and answers:
   ```
   {answers}
   ```
