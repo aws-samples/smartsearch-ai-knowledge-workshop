@@ -1,7 +1,8 @@
 flask
 flask-cors
 protobuf==3.20.3
-transformers==4.27.1
+# transformers==4.27.1
+transformers==4.41.2
 icetk
 cpm_kernels
 diffusers
